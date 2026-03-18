@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
+
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -37,9 +38,13 @@
 	<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-ZCKLQD6DJY"></script>
 	<script>
 		window.dataLayer = window.dataLayer || [];
-		function gtag() { dataLayer.push(arguments); }
+
+		function gtag() {
+			dataLayer.push(arguments);
+		}
 		gtag('js', new Date());
 		gtag('config', 'G-ZCKLQD6DJY');
+
 	</script>
 </head>
 <body>
@@ -58,18 +63,18 @@
 				<div class="install-hero">
 					<div class="install-logo"><i class="fa-solid fa-basket-shopping"></i></div>
 					<h1 class="install-title">Shoply</h1>
-					<p class="install-tagline">Deine Familie.<br>Eine Liste. Immer aktuell.</p>
+					<p class="install-tagline">Your Family.<br>One List. Always Up to Date.</p>
 					<div class="install-features" id="install-features">
-						<div class="feature-card"><i class="fa-solid fa-bolt"></i><span>Echtzeit-Sync</span></div>
-						<div class="feature-card"><i class="fa-solid fa-users"></i><span>Für die Familie</span></div>
-						<div class="feature-card"><i class="fa-solid fa-wifi-slash"></i><span>Offline-fähig</span></div>
-						<div class="feature-card"><i class="fa-solid fa-tags"></i><span>Kategorien</span></div>
+						<div class="feature-card"><i class="fa-solid fa-bolt"></i><span>Real-time Sync</span></div>
+						<div class="feature-card"><i class="fa-solid fa-users"></i><span>For the Family</span></div>
+						<div class="feature-card"><i class="fa-solid fa-wifi-slash"></i><span>Offline-ready</span></div>
+						<div class="feature-card"><i class="fa-solid fa-tags"></i><span>Categories</span></div>
 					</div>
 				</div>
 				<div class="install-actions">
-					<button class="btn btn-primary install-cta" id="show-install-guide"><i class="fa-solid fa-download"></i> Shoply installieren</button>
-					<button class="btn btn-secondary" id="learn-more-btn"><i class="fa-solid fa-circle-info"></i> Mehr erfahren</button>
-					<button class="install-skip" id="continue-in-browser">oder im Browser fortfahren</button>
+					<button class="btn btn-primary install-cta" id="show-install-guide"><i class="fa-solid fa-download"></i> Install Shoply</button>
+					<button class="btn btn-secondary" id="learn-more-btn"><i class="fa-solid fa-circle-info"></i> Learn more</button>
+					<button class="install-skip" id="continue-in-browser">or continue in browser</button>
 				</div>
 			</div>
 			<div id="install-guide" class="install-section hidden">
@@ -86,49 +91,49 @@
 				<div class="platform-content">
 					<div class="platform-panel active" id="panel-chrome">
 						<div class="step"><span class="step-num">1</span>
-							<p>Klicke auf das <strong>Installieren-Symbol</strong> <i class="fa-solid fa-download"></i> in der Adressleiste.</p>
+							<p>Click the <strong>Install icon</strong> <i class="fa-solid fa-download"></i> in the address bar.</p>
 						</div>
 						<div class="step"><span class="step-num">2</span>
-							<p>Wähle <strong>„Shoply installieren"</strong> im Dialog.</p>
+							<p>Select <strong>"Install Shoply"</strong> in the dialog.</p>
 						</div>
 						<div class="step success"><i class="fa-solid fa-circle-check"></i>
-							<p>Fertig! Shoply erscheint auf deinem Desktop.</p>
+							<p>Done! Shoply will appear on your desktop.</p>
 						</div>
 					</div>
 					<div class="platform-panel" id="panel-firefox">
 						<div class="warning"><i class="fa-solid fa-triangle-exclamation"></i>
-							<p>Firefox unterstützt PWA-Installation eingeschränkt. Wir empfehlen Chrome.</p>
+							<p>Firefox has limited PWA support. We recommend Chrome.</p>
 						</div>
 						<div class="step"><span class="step-num">1</span>
-							<p>Öffne das <strong>Menü</strong> (☰) oben rechts.</p>
+							<p>Open the <strong>Menu</strong> (☰) in the top right.</p>
 						</div>
 						<div class="step"><span class="step-num">2</span>
-							<p>Wähle <strong>„Seite als App installieren"</strong>.</p>
+							<p>Select <strong>"Install page as app"</strong>.</p>
 						</div>
 					</div>
 					<div class="platform-panel" id="panel-safari">
 						<div class="step"><span class="step-num">1</span>
-							<p>Tippe auf den <strong>Teilen-Button</strong> <i class="fa-solid fa-arrow-up-from-bracket"></i> unten.</p>
+							<p>Tap the <strong>Share button</strong> <i class="fa-solid fa-arrow-up-from-bracket"></i> at the bottom.</p>
 						</div>
 						<div class="step"><span class="step-num">2</span>
-							<p>Wähle <strong>„Zum Home-Bildschirm"</strong>.</p>
+							<p>Select <strong>"Add to Home Screen"</strong>.</p>
 						</div>
 						<div class="step"><span class="step-num">3</span>
-							<p>Tippe auf <strong>„Hinzufügen"</strong>.</p>
+							<p>Tap <strong>"Add"</strong>.</p>
 						</div>
 						<div class="step success"><i class="fa-solid fa-circle-check"></i>
-							<p>Shoply ist auf deinem Home-Bildschirm!</p>
+							<p>Shoply is on your home screen!</p>
 						</div>
 					</div>
 					<div class="platform-panel" id="panel-android">
 						<div class="step"><span class="step-num">1</span>
-							<p>Tippe auf das <strong>Menü-Symbol</strong> ⋮ in Chrome.</p>
+							<p>Tap the <strong>menu icon</strong> ⋮ in Chrome.</p>
 						</div>
 						<div class="step"><span class="step-num">2</span>
-							<p>Wähle <strong>„Zum Startbildschirm hinzufügen"</strong>.</p>
+							<p>Select <strong>"Add to Home Screen"</strong>.</p>
 						</div>
 						<div class="step success"><i class="fa-solid fa-circle-check"></i>
-							<p>Fertig! Starte Shoply vom Startbildschirm.</p>
+							<p>Done! Launch Shoply from your home screen.</p>
 						</div>
 					</div>
 				</div>
@@ -139,68 +144,68 @@
 		<div class="login-card">
 			<div class="login-logo"><i class="fa-solid fa-basket-shopping"></i></div>
 			<h1 class="login-title">Shoply</h1>
-			<p class="login-subtitle" id="auth-subtitle">Willkommen zurück</p>
+			<p class="login-subtitle" id="auth-subtitle">Welcome back</p>
 			<div id="form-login" class="login-form">
 				<div class="field-group">
-					<label class="field-label">E-Mail</label>
+					<label class="field-label">Email</label>
 					<div class="input-wrap">
 						<i class="fa-solid fa-envelope input-icon"></i>
-						<input type="email" id="login-email" placeholder="deine@email.de" autocomplete="email">
+						<input type="email" id="login-email" placeholder="your@email.com" autocomplete="email">
 					</div>
 				</div>
 				<div class="field-group">
-					<label class="field-label">Passwort</label>
+					<label class="field-label">Password</label>
 					<div class="input-wrap">
 						<i class="fa-solid fa-lock input-icon"></i>
-						<input type="password" id="login-password" placeholder="Passwort" autocomplete="current-password">
+						<input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
 					</div>
 				</div>
 				<div id="login-msg" class="status-banner hidden"></div>
-				<button class="btn btn-primary" id="login-btn"><i class="fa-solid fa-arrow-right-to-bracket"></i> Anmelden</button>
-				<button class="btn btn-secondary" id="to-register-btn">Noch kein Konto? Registrieren →</button>
+				<button class="btn btn-primary" id="login-btn"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign in</button>
+				<button class="btn btn-secondary" id="to-register-btn">No account yet? Register →</button>
 			</div>
 			<div id="form-register" class="login-form hidden">
 				<div class="field-group">
-					<label class="field-label">Anzeigename</label>
+					<label class="field-label">Display Name</label>
 					<div class="input-wrap">
 						<i class="fa-solid fa-user input-icon"></i>
-						<input type="text" id="reg-name" placeholder="Dein Name" autocomplete="name" maxlength="40">
+						<input type="text" id="reg-name" placeholder="Your name" autocomplete="name" maxlength="40">
 					</div>
 				</div>
 				<div class="field-group">
-					<label class="field-label">E-Mail</label>
+					<label class="field-label">Email</label>
 					<div class="input-wrap">
 						<i class="fa-solid fa-envelope input-icon"></i>
-						<input type="email" id="reg-email" placeholder="deine@email.de" autocomplete="email">
+						<input type="email" id="reg-email" placeholder="your@email.com" autocomplete="email">
 					</div>
 				</div>
 				<div class="field-group">
-					<label class="field-label">Passwort</label>
+					<label class="field-label">Password</label>
 					<div class="input-wrap">
 						<i class="fa-solid fa-lock input-icon"></i>
-						<input type="password" id="reg-password" placeholder="Mindestens 8 Zeichen" autocomplete="new-password">
+						<input type="password" id="reg-password" placeholder="At least 8 characters" autocomplete="new-password">
 					</div>
 				</div>
 				<div id="register-msg" class="status-banner hidden"></div>
-				<button class="btn btn-primary" id="register-btn"><i class="fa-solid fa-user-plus"></i> Konto erstellen</button>
-				<button class="btn btn-secondary" id="to-login-btn">← Zurück zum Login</button>
+				<button class="btn btn-primary" id="register-btn"><i class="fa-solid fa-user-plus"></i> Create account</button>
+				<button class="btn btn-secondary" id="to-login-btn">← Back to login</button>
 			</div>
 		</div>
 	</div>
 	<div id="verify-screen" class="hidden">
 		<div class="login-card">
 			<div class="login-logo" style="font-size:48px;">📬</div>
-			<h1 class="login-title" style="font-size:42px;">Fast da!</h1>
-			<p class="login-subtitle">E-Mail bestätigen</p>
+			<h1 class="login-title" style="font-size:42px;">Almost there!</h1>
+			<p class="login-subtitle">Confirm your email</p>
 			<div class="login-form">
 				<p style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--warm-gray);line-height:1.7;">
-					Wir haben dir einen Bestätigungslink an<br>
+					We sent a confirmation link to<br>
 					<strong style="color:var(--cyan)" id="verify-email-show">-</strong><br>
-					gesendet. Klicke den Link und melde dich dann an.
+					Click the link and then sign in.
 				</p>
 				<div id="verify-msg" class="status-banner hidden"></div>
-				<button class="btn btn-teal" id="resend-btn"><i class="fa-solid fa-paper-plane"></i> Link erneut senden</button>
-				<button class="btn btn-secondary" id="back-to-login-btn">← Zurück zum Login</button>
+				<button class="btn btn-teal" id="resend-btn"><i class="fa-solid fa-paper-plane"></i> Resend link</button>
+				<button class="btn btn-secondary" id="back-to-login-btn">← Back to login</button>
 			</div>
 		</div>
 	</div>
@@ -210,11 +215,11 @@
 				<i class="fa-solid fa-basket-shopping header-icon"></i>
 				<div>
 					<h1 class="app-title">Shoply</h1>
-					<span class="family-name" id="family-name-display">Keine Familie</span>
+					<span class="family-name" id="family-name-display">No family</span>
 				</div>
 			</div>
 			<div class="header-actions">
-				<div class="connection-indicator" id="connection-dot" title="Verbindungsstatus">
+				<div class="connection-indicator" id="connection-dot" title="Connection status">
 					<span class="dot dot-gray"></span>
 				</div>
 				<button class="icon-btn" id="profile-btn" title="Profil">
@@ -225,32 +230,32 @@
 		<div id="no-family-notice" class="no-family-notice hidden">
 			<i class="fa-solid fa-users-slash nfn-icon"></i>
 			<div class="nfn-text">
-				<strong>Noch keiner Familie beigetreten</strong>
-				<p>Öffne dein Profil, um einer Familie beizutreten oder eine neue zu erstellen.</p>
+				<strong>Not part of a family yet</strong>
+				<p>Open your profile to join a family or create a new one.</p>
 			</div>
-			<button class="btn btn-teal btn-sm" id="open-profile-from-notice"><i class="fa-solid fa-user"></i> Zum Profil</button>
+			<button class="btn btn-teal btn-sm" id="open-profile-from-notice"><i class="fa-solid fa-user"></i> Go to profile</button>
 		</div>
 		<section class="forms-section" id="forms-section">
 			<div class="forms-grid">
 				<div class="form-card">
-					<h3 class="form-card-title"><i class="fa-solid fa-folder-plus"></i> Kategorie</h3>
+					<h3 class="form-card-title"><i class="fa-solid fa-folder-plus"></i> Category</h3>
 					<div class="inline-form">
-						<input type="text" id="category-input" placeholder="Kategoriename" maxlength="50">
+						<input type="text" id="category-input" placeholder="Category name" maxlength="50">
 						<button class="btn btn-teal btn-icon" id="add-category-btn"><i class="fa-solid fa-plus"></i></button>
 					</div>
 					<div id="category-msg" class="status-banner hidden"></div>
 				</div>
 				<div class="form-card">
-					<h3 class="form-card-title"><i class="fa-solid fa-cart-plus"></i> Artikel</h3>
+					<h3 class="form-card-title"><i class="fa-solid fa-cart-plus"></i> Item</h3>
 					<div class="item-form">
-						<input type="text" id="item-name-input" placeholder="Artikelname" maxlength="100">
+						<input type="text" id="item-name-input" placeholder="Item name" maxlength="100">
 						<div class="item-form-row">
 							<select id="category-select" class="category-select">
-								<option value="">Kategorie wählen…</option>
+								<option value="">Choose category…</option>
 							</select>
 							<input type="number" id="item-qty-input" value="1" min="1" max="99" class="qty-input">
 						</div>
-						<button class="btn btn-primary" id="add-item-btn"><i class="fa-solid fa-plus"></i> Hinzufügen</button>
+						<button class="btn btn-primary" id="add-item-btn"><i class="fa-solid fa-plus"></i> Add</button>
 					</div>
 					<div id="item-msg" class="status-banner hidden"></div>
 				</div>
@@ -258,103 +263,108 @@
 		</section>
 		<section class="list-section">
 			<div class="list-header">
-				<h2 class="list-title">Einkaufsliste</h2>
+				<h2 class="list-title">Shopping List</h2>
 				<span class="last-updated" id="last-updated">-</span>
 			</div>
 			<div id="category-list" class="category-list">
 				<div class="empty-state" id="empty-state">
 					<i class="fa-solid fa-basket-shopping empty-icon"></i>
-					<p>Noch keine Einträge.</p>
-					<span>Füge eine Kategorie und Artikel hinzu!</span>
+					<p>No entries yet.</p>
+					<span>Add a category and some items!</span>
 				</div>
 			</div>
 		</section>
 		<footer class="app-footer">
-			<span class="footer-copy">© <a id="copyright"></a> Shoply via HealthSync | Alle Rechte vorbehalten!</span>
-			<button class="footer-link" id="open-cookie-settings">Cookie-Einstellungen</button>
+			<span class="footer-copy">© <a id="copyright"></a> Shoply via HealthSync | All rights reserved!</span>
+			<span>
+				<a class="footer-link" href="https://itsmarian.dev/legal/privacy" target="_blank">Privacy Policy</a>
+				<span style="font-size: 11px; color: var(--muted);">•</span>
+				<a class="footer-link" href="https://itsmarian.dev/legal/terms" target="_blank">Terms of Use</a>
+			</span>
+			<button class="footer-link" id="open-cookie-settings">Cookie Settings</button>
 		</footer>
 	</div>
 	<div id="profile-modal" class="modal-overlay hidden">
 		<div class="modal">
 			<div class="modal-header">
-				<h2 class="modal-title">Profil</h2>
+				<h2 class="modal-title">Profile</h2>
 				<button class="modal-close" id="close-profile-modal"><i class="fa-solid fa-xmark"></i></button>
 			</div>
 			<div class="modal-body">
 				<div class="profile-block">
-					<div class="block-heading"><i class="fa-solid fa-user"></i> Konto</div>
+					<div class="block-heading"><i class="fa-solid fa-user"></i> Account</div>
 					<div class="profile-info-row">
 						<span class="info-label">Name</span>
 						<span class="info-value" id="profile-display-name">-</span>
 					</div>
 					<div class="profile-info-row">
-						<span class="info-label">E-Mail</span>
+						<span class="info-label">Email</span>
 						<span class="info-value" id="profile-email">-</span>
 					</div>
 					<div class="field-group" style="margin-top:4px;">
-						<label class="field-label">Anzeigename ändern</label>
+						<label class="field-label">Change display name</label>
 						<div class="inline-form">
-							<input type="text" id="new-display-name" placeholder="Neuer Anzeigename" maxlength="40">
+							<input type="text" id="new-display-name" placeholder="New display name" maxlength="40">
 							<button class="btn btn-teal btn-icon" id="save-display-name-btn"><i class="fa-solid fa-check"></i></button>
 						</div>
 					</div>
 					<div id="name-msg" class="status-banner hidden"></div>
 				</div>
 				<div class="profile-block">
-					<div class="block-heading"><i class="fa-solid fa-users"></i> Familie</div>
+					<div class="block-heading"><i class="fa-solid fa-users"></i> Family</div>
 					<div id="current-family-section" class="hidden">
 						<div class="profile-info-row">
-							<span class="info-label">Aktuelle Familie</span>
+							<span class="info-label">Current family</span>
 							<span class="info-value" id="profile-family-name">-</span>
 						</div>
 						<div class="profile-info-row" style="flex-direction: column;">
-							<span class="info-label" style="padding-top:2px;">Mitglieder</span>
+							<span class="info-label" style="padding-top:2px;">Members</span>
 							<div class="members-list" id="family-members-list"></div>
 						</div>
-						<button class="btn btn-danger btn-sm" id="leave-family-btn"><i class="fa-solid fa-right-from-bracket"></i> Familie verlassen</button>
+						<button class="btn btn-danger btn-sm" id="leave-family-btn"><i class="fa-solid fa-right-from-bracket"></i> Leave family</button>
 					</div>
 					<div id="no-family-section">
-						<p class="hint-text">Du bist noch keiner Familie beigetreten.</p>
+						<p class="hint-text">You haven't joined a family yet.</p>
 					</div>
 					<div id="familySettings">
-						<div class="family-divider"><span>Neue Familie erstellen</span></div>
+						<div class="family-divider"><span>Create new family</span></div>
 						<div class="field-group">
-							<label class="field-label">Familienname</label>
-							<input type="text" id="new-family-name" placeholder="z.B. Familie Müller" maxlength="50">
+							<label class="field-label">Family name</label>
+							<input type="text" id="new-family-name" placeholder="e.g. The Smiths" maxlength="50">
 						</div>
-						<button class="btn btn-primary btn-sm" id="create-family-btn"><i class="fa-solid fa-plus"></i> Familie erstellen</button>
-						<div class="family-divider"><span>Familie beitreten</span></div>
+						<button class="btn btn-primary btn-sm" id="create-family-btn"><i class="fa-solid fa-plus"></i> Create family</button>
+						<div class="family-divider"><span>Join a family</span></div>
 						<div class="field-group">
-							<label class="field-label">Familien-ID (64 Zeichen)</label>
+							<label class="field-label">Family ID (64 characters)</label>
 							<div class="input-wrap">
 								<i class="fa-solid fa-key input-icon"></i>
-								<input type="text" id="join-family-id" placeholder="64-stellige ID eingeben" maxlength="64" spellcheck="false" autocomplete="off">
+								<input type="text" id="join-family-id" placeholder="Enter 64-character ID" maxlength="64" spellcheck="false" autocomplete="off">
 							</div>
 							<span class="field-hint" id="join-id-count">0 / 64</span>
 						</div>
-						<button class="btn btn-teal btn-sm" id="join-family-btn"><i class="fa-solid fa-right-to-bracket"></i> Beitreten</button>
+						<button class="btn btn-teal btn-sm" id="join-family-btn"><i class="fa-solid fa-right-to-bracket"></i> Join</button>
 					</div>
 					<div id="share-id-section" class="hidden">
-						<div class="family-divider"><span>ID teilen</span></div>
-						<p class="hint-text">Teile diese ID mit deiner Familie:</p>
+						<div class="family-divider"><span>Share ID</span></div>
+						<p class="hint-text">Share this ID with your family:</p>
 						<div class="share-id-box" id="share-id-display">-</div>
-						<button class="btn btn-secondary btn-sm" id="copy-id-btn"><i class="fa-solid fa-copy"></i> Kopieren</button>
+						<button class="btn btn-secondary btn-sm" id="copy-id-btn"><i class="fa-solid fa-copy"></i> Copy</button>
 					</div>
 					<div id="family-msg" class="status-banner hidden"></div>
 				</div>
 				<div class="profile-block">
-					<div class="block-heading"><i class="fa-solid fa-sliders"></i> Einstellungen</div>
+					<div class="block-heading"><i class="fa-solid fa-sliders"></i> Settings</div>
 					<div class="profile-info-row">
 						<div>
 							<div class="cookie-cat-name">Splash Screen</div>
-							<div class="cookie-cat-desc">Ladeanimation beim Start anzeigen</div>
+							<div class="cookie-cat-desc">Show loading animation on startup</div>
 						</div>
 						<div class="toggle-switch" id="toggle-splash">
 							<div class="toggle-knob"></div>
 						</div>
 					</div>
 				</div>
-				<button class="btn btn-teal btn-icon" id="logout-btn" title="Abmelden">
+				<button class="btn btn-teal btn-icon" id="logout-btn" title="Sign out">
 					<i class="fa-solid fa-right-from-bracket"></i>
 					Logout
 				</button>
@@ -366,30 +376,30 @@
 			<p class="cookie-text">
 				<i class="fa-solid fa-cookie-bite"></i>
 				<span>
-					Diese Website verwendet Cookies und ähnliche Technologien, um ihre grundlegende Funktionalität sicherzustellen, dein Nutzererlebnis zu verbessern, die Nutzung der Website zu analysieren, anonymisierte Statistiken über den Website-Traffic und Nutzungsverhalten zu erheben, deine Einstellungen wie Sprache oder Region zu speichern sowie erweiterte Funktionen bereitzustellen und eingebettete Inhalte wie Videos, Karten oder Social-Media-Feeds anzubieten.
+					This website uses cookies and similar technologies to ensure its basic functionality, improve your experience, analyze usage, collect anonymized statistics about traffic and behavior, remember your preferences such as language or region, and provide advanced features including embedded content like videos, maps, or social media feeds.
 					<br>
-					Wenn du auf „Akzeptieren“ klickst, stimmst du der Verwendung aller Cookies zu. Du kannst deine Einstellungen jederzeit ändern. Durch die Nutzung meiner Dienste erklärst du dich mit der Cookie-Richtlinie, der <a class="linkout" href="https://itsmarian.dev/legal/privacy" target="_blank">Datenschutzerklärung</a> und den <a class="linkout" href="https://itsmarian.dev/legal/terms" target="_blank">Nutzungsbedingungen</a> einverstanden.
+					Wenn du auf „Akzeptieren“ klickst, stimmst du der Verwendung aller Cookies zu. Du kannst deine Einstellungen jederzeit ändern. Durch die Nutzung meiner Dienste erklärst du dich mit der Cookie-Richtlinie, der <a class="linkout" href="https://itsmarian.dev/legal/privacy" target="_blank">Privacy Policy</a> and the Terms of Use.
 				</span>
 			</p>
 			<div class="cookie-actions">
-				<button class="btn btn-primary btn-sm" id="accept-all-cookies">Alle akzeptieren</button>
-				<button class="btn btn-secondary btn-sm" id="cookie-settings-btn">Einstellungen</button>
+				<button class="btn btn-primary btn-sm" id="accept-all-cookies">Accept all</button>
+				<button class="btn btn-secondary btn-sm" id="cookie-settings-btn">Settings</button>
 			</div>
 		</div>
 	</div>
 	<div id="cookie-modal" class="modal-overlay hidden">
 		<div class="modal">
 			<div class="modal-header">
-				<h2 class="modal-title">Cookie-Einstellungen</h2>
+				<h2 class="modal-title">Cookie Settings</h2>
 				<button class="modal-close" id="close-cookie-modal"><i class="fa-solid fa-xmark"></i></button>
 			</div>
 			<div class="modal-body">
-				<p class="modal-desc">Wähle, welche Cookies du erlaubst.</p>
+				<p class="modal-desc">Choose which cookies you allow.</p>
 				<div class="cookie-category">
 					<div class="cookie-cat-header">
 						<div>
-							<div class="cookie-cat-name">Notwendige Cookies</div>
-							<div class="cookie-cat-desc">Diese Cookies sind für die Grundfunktionen der Website erforderlich und können nicht deaktiviert werden. Sie gewährleisten Sicherheitsfunktionen und ermöglichen die Navigation auf der Website.</div>
+							<div class="cookie-cat-name">Necessary Cookies</div>
+							<div class="cookie-cat-desc">These cookies are required for the basic functions of the website and cannot be disabled. They ensure security features and enable navigation on the site.</div>
 						</div>
 						<div class="toggle-switch active disabled">
 							<div class="toggle-knob"></div>
@@ -399,8 +409,8 @@
 				<div class="cookie-category">
 					<div class="cookie-cat-header">
 						<div>
-							<div class="cookie-cat-name">Statistik &amp; Analytics</div>
-							<div class="cookie-cat-desc">Diese Cookies erfassen Informationen darüber, wie Besucher meine Website nutzen. Sie helfen mir zu verstehen, welche Seiten am beliebtesten sind und wie Besucher sich auf der Website bewegen. Alle erfassten Daten werden anonymisiert verarbeitet.</div>
+							<div class="cookie-cat-name">Statistics &amp; Analytics</div>
+							<div class="cookie-cat-desc">These cookies collect information about how visitors use my website. They help me understand which pages are most popular and how visitors navigate the site. All collected data is processed anonymously.</div>
 						</div>
 						<div class="toggle-switch" id="toggle-analytics">
 							<div class="toggle-knob"></div>
@@ -410,8 +420,8 @@
 				<div class="cookie-category">
 					<div class="cookie-cat-header">
 						<div>
-							<div class="cookie-cat-name">Präferenzen</div>
-							<div class="cookie-cat-desc">Diese Cookies ermöglichen es der Website, sich deine Einstellungen (wie deinen Benutzernamen, diene Sprache oder Ihre Region) zu merken und dir verbesserte, individuellere Funktionen anzubieten.</div>
+							<div class="cookie-cat-name">Preferences</div>
+							<div class="cookie-cat-desc">These cookies allow the website to remember your settings (such as your username, language, or region) and provide improved, more personalized features.</div>
 						</div>
 						<div class="toggle-switch" id="toggle-preferences">
 							<div class="toggle-knob"></div>
@@ -421,8 +431,8 @@
 				<div class="cookie-category">
 					<div class="cookie-cat-header">
 						<div>
-							<div class="cookie-cat-name">Drittanbieter-Inhalte</div>
-							<div class="cookie-cat-desc">Diese Cookies werden von Drittanbietern gesetzt, deren Dienste ich nutze, um zusätzliche Funktionen wie eingebettete Videos, Karten oder Inhalte aus sozialen Medien bereitzustellen. Drittanbieter können diese Cookies auch verwenden, um personalisierte Werbung anzuzeigen.</div>
+							<div class="cookie-cat-name">Third-party Content</div>
+							<div class="cookie-cat-desc">These cookies are set by third-party services I use to provide additional features such as embedded videos, maps, or social media content. Third parties may also use these cookies to show personalized ads.</div>
 						</div>
 						<div class="toggle-switch" id="toggle-thirdparty">
 							<div class="toggle-knob"></div>
@@ -432,8 +442,8 @@
 				<div class="cookie-category">
 					<div class="cookie-cat-header">
 						<div>
-							<div class="cookie-cat-name">Marketing & Werbung</div>
-							<div class="cookie-cat-desc">Diese Cookies werden verwendet, um Besuchern auf anderen Websites relevante Werbung anzuzeigen. Außerdem dienen sie dazu, die Häufigkeit der Anzeigenanzeige zu begrenzen und die Wirksamkeit von Werbekampagnen zu messen.</div>
+							<div class="cookie-cat-name">Marketing &amp; Advertising</div>
+							<div class="cookie-cat-desc">These cookies are used to show visitors relevant ads on other websites. They also help limit the frequency of ads shown and measure the effectiveness of advertising campaigns.</div>
 						</div>
 						<div class="toggle-switch" id="toggle-marketing">
 							<div class="toggle-knob"></div>
@@ -441,8 +451,8 @@
 					</div>
 				</div>
 				<div class="modal-footer-btns">
-					<button class="btn btn-primary btn-sm" id="save-cookie-settings">Speichern</button>
-					<button class="btn btn-teal btn-sm" id="accept-all-modal">Alle akzeptieren</button>
+					<button class="btn btn-primary btn-sm" id="save-cookie-settings">Save</button>
+					<button class="btn btn-teal btn-sm" id="accept-all-modal">Accept all</button>
 				</div>
 			</div>
 		</div>
@@ -450,13 +460,13 @@
 	<div id="confirm-modal" class="modal-overlay hidden">
 		<div class="modal modal-sm">
 			<div class="modal-header">
-				<h2 class="modal-title" id="confirm-title">Bestätigen</h2>
+				<h2 class="modal-title" id="confirm-title">Confirm</h2>
 			</div>
 			<div class="modal-body">
-				<p class="confirm-text" id="confirm-text">Bist du sicher?</p>
+				<p class="confirm-text" id="confirm-text">Are you sure?</p>
 				<div class="modal-footer-btns">
-					<button class="btn btn-danger btn-sm" id="confirm-ok">Bestätigen</button>
-					<button class="btn btn-secondary btn-sm" id="confirm-cancel">Abbrechen</button>
+					<button class="btn btn-danger btn-sm" id="confirm-ok">Confirm</button>
+					<button class="btn btn-secondary btn-sm" id="confirm-cancel">Cancel</button>
 				</div>
 			</div>
 		</div>
