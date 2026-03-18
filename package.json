@@ -1,0 +1,30 @@
+{
+	"name": "shoply",
+	"version": "1.0.0",
+	"description": "Smart shopping list PWA with real-time sync",
+	"main": "index.html",
+	"scripts": {
+		"dev": "python -m http.server 8000",
+		"start": "npm run dev",
+		"deploy": "vercel --prod"
+	},
+	"keywords": [
+		"pwa",
+		"shopping-list",
+		"supabase",
+		"realtime",
+		"grocery"
+	],
+	"author": "Your Name",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/yourusername/shoply.git"
+	},
+	"bugs": {
+		"url": "https://github.com/yourusername/shoply/issues"
+	},
+	"homepage": "https://github.com/yourusername/shoply#readme",
+	"devDependencies": {},
+	"dependencies": {}
+}
