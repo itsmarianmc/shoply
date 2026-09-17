@@ -1,0 +1,22 @@
+services:
+  shoply:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+      DATA_DIR: /data
+      ADMIN_NAMES: ${ADMIN_NAMES}
+      MEMBER_NAMES: ${MEMBER_NAMES}
+      PASSWORD_LENGTH: ${PASSWORD_LENGTH:-64}
+      DEFAULT_CATEGORIES: ${DEFAULT_CATEGORIES:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      FONTAWESOME_HOST: ${FONTAWESOME_HOST:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:contact@itsmarian.dev}
+    volumes:
+      - ${DATA_VOLUME_PATH:-./data}:/data

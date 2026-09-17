@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" xmlns:c2pa="http://c2pa.org/manifest">
+  <rect width="512" height="512" fill="#12161a"/>
+  <path d="M101.4 178.0 L410.6 178.0 L377.4 398.8 Q374.7 420.8 352.6 420.8 L159.4 420.8 Q137.3 420.8 134.6 398.8 Z"
+        fill="none" stroke="#7fb069" stroke-width="25" stroke-linejoin="round"/>
+  <path d="M162.2 178.0 L178.7 95.2 Q192.5 62.0 228.4 62.0 L283.6 62.0 Q319.5 62.0 333.3 95.2 L349.8 178.0"
+        fill="none" stroke="#7fb069" stroke-width="25" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M183.2 299.4 L230.8 349.9 L328.8 248.9" fill="none" stroke="#d8a34c" stroke-width="34"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
