@@ -310,13 +310,15 @@ The root `.env.example` contains the settings normally needed for a deployment. 
 | `DATA_VOLUME_PATH` | Host directory for the Linux Compose variant | `./data` |
 | `COOKIE_SECURE` | Controls the cookie's `secure` flag | `false` in the example |
 | `FONTAWESOME_HOST` | Full URL to the hosted Font Awesome Pro `all.css` or `all.min.css` stylesheet | Required to load Font Awesome; blank disables its stylesheet |
+| `GEMINI_API_KEY` | Server-only Gemini API key for shopping-list scans | Optional; required to use scanning and never exposed to the browser |
+| `GEMINI_MODEL` | Gemini model used for shopping-list scans | `gemini-2.5-flash` |
 | `VAPID_PRIVATE_KEY` | Server-only private key for Web Push | Optional; never expose to clients |
 | `VAPID_PUBLIC_KEY` | Public Web Push application server key | Optional; required to activate Push |
 | `VAPID_SUBJECT` | VAPID contact subject | `mailto:contact@itsmarian.dev` |
 | `NEXT_TELEMETRY_DISABLED` | Disables Next.js telemetry | `1` in the Docker image |
 | `NODE_ENV` | Runtime mode | Set to production in the Docker image |
 
-Docker Compose reads the root `.env` file for variable substitution and passes the VAPID variables, `FONTAWESOME_HOST`, and `COOKIE_SECURE` into the app container. Set both VAPID keys in the deployment environment (do not commit them); set `VAPID_SUBJECT` only if a different contact is desired. Production also needs HTTPS at the host or reverse proxy. The default `docker-compose.yml` mounts `./data` at `/data` and maps host port `PORT` (default 3000) to container port 3000. `docker-compose.yml-linux` uses `DATA_VOLUME_PATH` for the host volume, with `./data` as its fallback.
+Docker Compose reads the root `.env` file for variable substitution and passes the VAPID variables, Gemini variables, `FONTAWESOME_HOST`, and `COOKIE_SECURE` into the app container. Set `GEMINI_API_KEY` only in the deployment environment (do not commit it); Shoply keeps it on the server and sends uploaded images directly to Gemini without storing them. Set both VAPID keys in the deployment environment (do not commit them); set `VAPID_SUBJECT` only if a different contact is desired. Production also needs HTTPS at the host or reverse proxy. The default `docker-compose.yml` mounts `./data` at `/data` and maps host port `PORT` (default 3000) to container port 3000. `docker-compose.yml-linux` uses `DATA_VOLUME_PATH` for the host volume, with `./data` as its fallback.
 
 ## Installation and development
 

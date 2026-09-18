@@ -10,6 +10,8 @@ import {
 } from "react";
 import { addItemAction, suggestItemsAction } from "@/app/list/actions";
 import { displayCategoryName, displayUnit } from "@/lib/presentation";
+import ShoppingScanDialog from "./ShoppingScanDialog";
+import type { ShoppingScanResult } from "@/lib/shopping-scan-types";
 
 type Suggestion = {
   display_name: string;
@@ -38,6 +40,10 @@ export default function AddItemForm({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suggestionGenerationRef = useRef(0);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const scanInputRef = useRef<HTMLInputElement>(null);
+  const scanButtonRef = useRef<HTMLButtonElement>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<ShoppingScanResult | null>(null);
 
   const visibleItems = showSuggestions
     ? suggestions
@@ -120,6 +126,33 @@ export default function AddItemForm({
         setError("Could not save the item. Please try again.");
       }
     });
+  }
+
+  async function scanImage(file: File) {
+    setError(null);
+    setIsScanning(true);
+    try {
+      const formData = new FormData();
+      formData.set("image", file);
+      const response = await fetch("/api/scan-shopping-list", {
+        method: "POST",
+        body: formData,
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (!response.ok || !isShoppingScanResult(data)) {
+        const message = isErrorResponse(data)
+          ? data.error
+          : "Der Einkaufszettel konnte nicht gescannt werden. Bitte erneut versuchen.";
+        setError(message);
+        return;
+      }
+      setScanResult(data);
+    } catch {
+      setError("Der Einkaufszettel konnte nicht gescannt werden. Bitte erneut versuchen.");
+    } finally {
+      setIsScanning(false);
+      if (scanInputRef.current) scanInputRef.current.value = "";
+    }
   }
 
   function optionElements(): HTMLElement[] {
@@ -256,6 +289,30 @@ export default function AddItemForm({
           )}
         </div>
 
+        <input
+          ref={scanInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          capture="environment"
+          className="spl-sr-only"
+          tabIndex={-1}
+          onChange={(event) => {
+            const file = event.currentTarget.files?.[0];
+            if (file) void scanImage(file);
+          }}
+        />
+        <button
+          ref={scanButtonRef}
+          type="button"
+          className="spl-icon-btn spl-scan-btn"
+          disabled={isScanning}
+          onClick={() => scanInputRef.current?.click()}
+          aria-label={isScanning ? "Einkaufszettel wird gescannt" : "Einkaufszettel scannen"}
+          title="Einkaufszettel scannen"
+        >
+          <i className={`fa-solid ${isScanning ? "fa-spinner fa-spin" : "fa-camera"}`} aria-hidden="true" />
+        </button>
+
         <button
           type="submit"
           className="spl-btn spl-btn-primary spl-btn-icon-only"
@@ -266,6 +323,7 @@ export default function AddItemForm({
           <i className="fa-solid fa-plus" aria-hidden="true" />
         </button>
       </form>
+      {isScanning && <div className="spl-scan-status" role="status" aria-live="polite">Einkaufszettel wird gescannt …</div>}
       {error && <div className="spl-error" role="alert">{error}</div>}
 
       {isOpen && (
@@ -315,8 +373,32 @@ export default function AddItemForm({
           })}
         </div>
       )}
+      {scanResult && (
+        <ShoppingScanDialog
+          result={scanResult}
+          onClose={() => {
+            setScanResult(null);
+            requestAnimationFrame(() => scanButtonRef.current?.focus());
+          }}
+        />
+      )}
     </div>
   );
+}
+
+function isErrorResponse(value: unknown): value is { error: string } {
+  return typeof value === "object" && value !== null && "error" in value &&
+    typeof (value as { error: unknown }).error === "string";
+}
+
+function isShoppingScanResult(value: unknown): value is ShoppingScanResult {
+  if (typeof value !== "object" || value === null) return false;
+  const result = value as Partial<ShoppingScanResult>;
+  return Number.isInteger(result.total_detected_lines) &&
+    Number.isInteger(result.successfully_parsed_count) &&
+    Number.isInteger(result.unreadable_count) &&
+    Array.isArray(result.items) &&
+    result.items.every((item) => typeof item?.name === "string");
 }
 
 function highlightMatch(text: string, query: string): React.ReactNode {

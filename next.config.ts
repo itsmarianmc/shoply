@@ -9,7 +9,7 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  serverExternalPackages: ["better-sqlite3", "web-push"],
+  serverExternalPackages: ["@google/genai", "better-sqlite3", "web-push"],
 };
 
 export default withSerwist(nextConfig);

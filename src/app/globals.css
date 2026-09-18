@@ -353,6 +353,26 @@ button {
   gap: 8px;
 }
 
+.spl-scan-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--spl-radius-md);
+  background: var(--spl-bg-raised-2);
+  border: 1px solid var(--spl-border);
+  color: var(--spl-green);
+}
+
+.spl-scan-btn:hover {
+  background: var(--spl-green-soft);
+  color: var(--spl-green);
+}
+
+.spl-scan-status {
+  color: var(--spl-text-dim);
+  font-size: 0.85rem;
+  padding: 2px 2px 0;
+}
+
 .spl-input {
   flex: 1;
   background: var(--spl-bg-raised-2);
@@ -1249,6 +1269,117 @@ select.spl-input.spl-input-sm {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.spl-scan-sheet {
+  max-width: 500px;
+}
+
+.spl-scan-stat {
+  color: var(--spl-text-dim);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin: 4px 0 0;
+}
+
+.spl-scan-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--spl-divider);
+}
+
+.spl-scan-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 10px 0;
+}
+
+.spl-scan-item + .spl-scan-item {
+  border-top: 1px solid var(--spl-divider);
+}
+
+.spl-scan-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.spl-scan-item-name {
+  display: block;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.spl-scan-item-error {
+  display: block;
+  color: #f3b3ac;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  margin-top: 4px;
+}
+
+.spl-scan-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.spl-scan-action-add {
+  color: var(--spl-green);
+}
+
+.spl-scan-action-add:hover {
+  background: var(--spl-green-soft);
+  color: var(--spl-green);
+}
+
+.spl-scan-empty {
+  color: var(--spl-text-faint);
+  font-size: 0.88rem;
+  font-style: italic;
+  padding: 18px 2px 6px;
+}
+
+.spl-scan-empty i {
+  color: var(--spl-green);
+  font-style: normal;
+  margin-right: 8px;
+}
+
+.spl-confirm-overlay {
+  z-index: 60;
+}
+
+.spl-confirm-sheet {
+  max-width: 360px;
+  gap: 14px;
+}
+
+.spl-confirm-message {
+  color: var(--spl-text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.spl-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.spl-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 @keyframes spl-fade-in {
