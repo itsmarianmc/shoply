@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 import { defaultCache } from "@serwist/next/worker";
-import { Serwist } from "serwist";
+import { Serwist, NetworkOnly } from "serwist";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
 
 declare global {
@@ -16,7 +16,10 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  runtimeCaching: [
+    { matcher: ({ url }) => url.pathname.startsWith("/api/item-images"), handler: new NetworkOnly() },
+    ...defaultCache,
+  ],
 });
 
 serwist.addEventListeners();

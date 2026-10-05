@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { restoreItemAction } from "@/app/archive/actions";
 import type { ItemWithNames } from "@/lib/types";
 import { displayUnit } from "@/lib/presentation";
+import ItemImage from "./ItemImage";
 
 function formatDate(iso: string | null): string {
   if (!iso) return "";
@@ -30,6 +31,7 @@ export default function ArchiveRow({ item }: { item: ItemWithNames }) {
 
   return (
     <div className="spl-row">
+      {item.image_id && <ItemImage imageId={item.image_id} itemName={item.name} />}
       <div className="spl-row-body">
         <span
           className="spl-item-name"

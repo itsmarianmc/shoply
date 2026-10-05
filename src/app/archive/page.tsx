@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { getArchivedItems } from "@/lib/items";
+import { maintainImageStorage } from "@/lib/item-images";
+import AutoRefresh from "@/components/AutoRefresh";
 import Header from "@/components/Header";
 import ArchiveRow from "@/components/ArchiveRow";
 
@@ -11,11 +13,13 @@ export default async function ArchivePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
+  maintainImageStorage();
   const items = getArchivedItems();
 
   return (
     <div className="spl-shell">
       <Header user={user} />
+      <AutoRefresh />
 
       <main className="spl-main">
         <section className="spl-card">

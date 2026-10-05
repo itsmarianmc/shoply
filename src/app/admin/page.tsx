@@ -27,6 +27,10 @@ export default async function AdminPage() {
       <main className="spl-main">
         <AdminSettingsPanel behavior={behavior} />
         <AdminCategoryManager categories={categories} />
+        <Link href="/admin/images" className="spl-card spl-admin-images-link">
+          <span><i className="fa-solid fa-images" aria-hidden="true" /> Images</span>
+          <span aria-hidden="true">&#x3E;</span>
+        </Link>
         <AdminAccountManager users={users} requestingUserId={user.id} />
       </main>
 

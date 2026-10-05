@@ -42,6 +42,7 @@ export interface Item {
 }
 
 export interface ItemWithNames extends Item {
+  image_id?: string | null;
   added_by_name: string | null;
   checked_by_name: string | null;
 }

@@ -17,6 +17,7 @@ import { moveItemToCategory, getAllCategories } from "@/lib/categories";
 import { getRevision } from "@/lib/revision";
 import { assertPositiveSafeId, validateItemFields } from "@/lib/validation";
 import { sendShoppingSessionStartedNotification } from "@/lib/push";
+import { maintainImageStorage } from "@/lib/item-images";
 
 export async function addItemAction(formData: FormData): Promise<{ error?: string; success?: boolean }> {
   const user = await requireUser();
@@ -147,5 +148,6 @@ export async function suggestItemsAction(
 
 export async function getRevisionAction(): Promise<number> {
   await requireUser();
+  maintainImageStorage();
   return getRevision();
 }

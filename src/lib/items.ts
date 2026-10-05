@@ -6,6 +6,7 @@ import { bumpRevision } from "./revision";
 import type { ItemWithNames } from "./types";
 import { validateItemFields, parseQuantity, parseUnit } from "./validation";
 import { endActiveShoppingSession, recordSuccessfulCheck } from "./shopping-sessions";
+import { queueItemImageDeletion, maintainImageStorage } from "./item-images";
 
 
 export function normalizeItemName(name: string): string {
@@ -118,6 +119,7 @@ export const checkItem = db.transaction(
          SET status = 'CHECKED',
              checked_by_user_id = ?,
              checked_at = datetime('now'),
+             shopping_completed_at = NULL,
              archived = ?,
              archived_at = CASE WHEN ? THEN datetime('now') ELSE archived_at END
          WHERE id = ? AND status = 'ACTIVE'`
@@ -198,8 +200,9 @@ export function uncheckItem(itemId: number): boolean {
 export function getArchivedItems(): ItemWithNames[] {
   return db
     .prepare(
-      `SELECT i.*, added.name AS added_by_name, checked.name AS checked_by_name
+      `SELECT i.*, images.id AS image_id, added.name AS added_by_name, checked.name AS checked_by_name
        FROM items i
+       LEFT JOIN item_images images ON images.item_id = i.id AND images.state = 'READY'
        LEFT JOIN users added ON added.id = i.added_by_user_id
        LEFT JOIN users checked ON checked.id = i.checked_by_user_id
        WHERE i.archived = 1
@@ -210,14 +213,24 @@ export function getArchivedItems(): ItemWithNames[] {
 
 
 export function restoreItem(itemId: number): void {
+  restoreItemTransaction(itemId);
+  maintainImageStorage();
+}
+
+const restoreItemTransaction = db.transaction((itemId: number): void => {
   const result = db.prepare(
     `UPDATE items
      SET archived = 0, archived_at = NULL, status = 'ACTIVE',
-         checked_by_user_id = NULL, checked_at = NULL
+         checked_by_user_id = NULL, checked_at = NULL, shopping_completed_at = NULL,
+         image_generation = image_generation + 1
      WHERE id = ? AND archived = 1`
   ).run(itemId);
-  if (result.changes > 0) bumpRevision();
-}
+  if (result.changes > 0) {
+    // Auto-archive restoration can also reverse an unfinished check. Its
+    // photo survives; photos from completed trips have already been detached.
+    bumpRevision();
+  }
+});
 
 
 export function archiveItem(itemId: number): void {
@@ -233,8 +246,9 @@ export function archiveItem(itemId: number): void {
 export function getItemById(itemId: number): ItemWithNames | undefined {
   return db
     .prepare(
-      `SELECT i.*, added.name AS added_by_name, checked.name AS checked_by_name
+      `SELECT i.*, images.id AS image_id, added.name AS added_by_name, checked.name AS checked_by_name
        FROM items i
+       LEFT JOIN item_images images ON images.item_id = i.id AND images.state = 'READY'
        LEFT JOIN users added ON added.id = i.added_by_user_id
        LEFT JOIN users checked ON checked.id = i.checked_by_user_id
        WHERE i.id = ?`
@@ -268,15 +282,29 @@ export function deleteItem(itemId: number): void {
     `DELETE FROM items WHERE id = ? AND (status = 'CHECKED' OR archived = 1)`
   ).run(itemId);
   if (result.changes > 0) bumpRevision();
+  maintainImageStorage();
 }
 
 
-export const completeShopping = db.transaction((_userId?: number): number => {
+export function getPendingShoppingCount(): number {
+  return (db.prepare("SELECT COUNT(*) AS count FROM items WHERE status = 'CHECKED' AND shopping_completed_at IS NULL").get() as { count: number }).count;
+}
+
+export function completeShopping(userId?: number): number {
+  const count = completeShoppingTransaction(userId);
+  maintainImageStorage();
+  return count;
+}
+
+const completeShoppingTransaction = db.transaction((_userId?: number): number => {
+  const included = db.prepare("SELECT id FROM items WHERE status = 'CHECKED' AND shopping_completed_at IS NULL").all() as { id: number }[];
+  for (const item of included) queueItemImageDeletion(item.id);
   const result = db
     .prepare(
       `UPDATE items
-       SET archived = 1, archived_at = datetime('now')
-       WHERE status = 'CHECKED' AND archived = 0`
+       SET archived = 1, archived_at = COALESCE(archived_at, datetime('now')),
+           shopping_completed_at = datetime('now'), image_generation = image_generation + 1
+       WHERE status = 'CHECKED' AND shopping_completed_at IS NULL`
     )
     .run();
 
@@ -421,7 +449,7 @@ export function undoCheckItem(itemId: number): boolean {
          checked_at = NULL,
          archived = 0,
          archived_at = NULL
-     WHERE id = ? AND status = 'CHECKED'`
+     WHERE id = ? AND status = 'CHECKED' AND shopping_completed_at IS NULL`
   ).run(itemId);
   if (result.changes > 0) bumpRevision();
   return result.changes > 0;

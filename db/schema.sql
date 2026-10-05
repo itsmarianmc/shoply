@@ -85,12 +85,30 @@ CREATE TABLE IF NOT EXISTS items (
   checked_at         TEXT,
   archived           INTEGER NOT NULL DEFAULT 0,
   archived_at        TEXT,
+  shopping_completed_at TEXT,
+  image_generation INTEGER NOT NULL DEFAULT 0,
   sort_order         INTEGER NOT NULL DEFAULT 0,
   created_at         TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_items_category ON items(category_id);
 CREATE INDEX IF NOT EXISTS idx_items_status ON items(status, archived);
+
+-- A deletion queue survives item deletion and interrupted filesystem cleanup.
+CREATE TABLE IF NOT EXISTS item_images (
+  id TEXT PRIMARY KEY,
+  item_id INTEGER REFERENCES items(id) ON DELETE SET NULL,
+  item_name TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL CHECK (size_bytes >= 0),
+  state TEXT NOT NULL CHECK (state IN ('READY', 'DELETE')) DEFAULT 'READY',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_item_images_one_ready
+  ON item_images(item_id) WHERE state = 'READY';
+CREATE TRIGGER IF NOT EXISTS item_images_deleted_item
+  AFTER DELETE ON items BEGIN
+    UPDATE item_images SET state = 'DELETE' WHERE item_id IS NULL;
+  END;
 
 CREATE TABLE IF NOT EXISTS app_settings (
   key   TEXT PRIMARY KEY,
@@ -99,6 +117,7 @@ CREATE TABLE IF NOT EXISTS app_settings (
 
 
 INSERT OR IGNORE INTO app_settings (key, value) VALUES ('checked_item_behavior', 'KEEP_IN_LIST');
+INSERT OR IGNORE INTO app_settings (key, value) VALUES ('image_storage_limit_bytes', '1000000000');
 
 
 CREATE TABLE IF NOT EXISTS item_history (

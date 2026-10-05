@@ -33,8 +33,9 @@ export function getCategoriesWithItems(): CategoryWithItems[] {
   const categories = getAllCategories();
 
   const itemStmt = db.prepare(
-    `SELECT i.*, added.name AS added_by_name, checked.name AS checked_by_name
+    `SELECT i.*, images.id AS image_id, added.name AS added_by_name, checked.name AS checked_by_name
      FROM items i
+     LEFT JOIN item_images images ON images.item_id = i.id AND images.state = 'READY'
      LEFT JOIN users added ON added.id = i.added_by_user_id
      LEFT JOIN users checked ON checked.id = i.checked_by_user_id
      WHERE i.category_id = ? AND i.archived = 0

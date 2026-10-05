@@ -61,6 +61,8 @@ Open [http://localhost:3000](http://localhost:3000).
 - Shared, categorized shopping list with item quantity, unit, and note fields.
 - Add, check off, uncheck, edit, and restore items. A short-lived undo snackbar can undo a check, including one that automatically archived the item.
 - Optional automatic archiving when an item is checked, plus a “Complete shopping” action that archives all checked items in one transaction.
+- Temporary item photos with list/detail thumbnails, an accessible enlarged view, and uploads/replacement for every signed-in member. Only admins can remove individual photos or manage image storage.
+- Admin image management and a 100 MB–10 GB storage quota (1 GB by default), with live usage and server-enforced upload limits.
 - Item history with autocomplete, recently used items, and remembered quantity/unit defaults.
 - Category memory for administrators. Members’ new items always go into the default “Uncategorized” category.
 - Duplicate merging for active items with the same name and category when both quantities are numeric and their units and notes match.
@@ -145,7 +147,7 @@ The app follows the Next.js App Router model:
 
 On container startup, `docker-entrypoint.sh` creates and permissions `DATA_DIR`, runs the idempotent seed script, and then starts Next.js as the unprivileged `shoply` user. Locally, `npm run seed` is optional if the database and accounts already exist. SQLite is created under `./data/shoply.db` by default.
 
-All application data stays in server-side SQLite. The UI reads through Server Components and writes through Server Actions; there is no separate REST API or external database service. Font Awesome CSS and webfonts load from the host in `FONTAWESOME_HOST`; without it, the app does not load a Font Awesome stylesheet.
+Application records stay in server-side SQLite; item image files live in `DATA_DIR/item-images`. The UI reads through Server Components and writes through Server Actions and authenticated image Route Handlers. Font Awesome CSS and webfonts load from the host in `FONTAWESOME_HOST`; without it, the app does not load a Font Awesome stylesheet.
 
 Server-side library modules import `server-only` to prevent accidental inclusion in client bundles. The web interface and maintenance-script output are in English.
 
@@ -197,6 +199,7 @@ The database schema is in `db/schema.sql`. Its main tables are:
 | `item_history` | Remembered item names, categories, defaults, and usage history |
 | `push_subscriptions` | Per-user browser push endpoints and delivery status |
 | `shopping_sessions` | Global shopping-session start, activity, and end timestamps |
+| `item_images` | Generated image identifiers, item associations/names, byte sizes, and durable deletion state; no binary image data |
 
 Roles are `ADMIN` and `MEMBER`. Item states are `ACTIVE` and `CHECKED`; checked-item behavior is `KEEP_IN_LIST` or `ARCHIVE`. An item has an optional numeric quantity, unit, note, and checked/archived metadata.
 
@@ -225,7 +228,7 @@ There is no public REST API. Route-level Server Actions provide the app's read/w
 | `moveItemAction` | Move an item and update its remembered category | Admin |
 | `updateItemAction` / `deleteItemAction` | Edit item details or delete an already checked/archived item | Signed-in |
 | `rememberCategoryAction` | Set and remember an item's category from the detail dialog | Admin |
-| `completeShoppingAction` | Archive all checked, unarchived items | Signed-in |
+| `completeShoppingAction` | Finish checked items, including auto-archived items, and remove their images | Signed-in |
 | `registerPushSubscriptionAction` / `deletePushSubscriptionAction` / `sendTestPushNotificationAction` | Manage and test the current user's browser push subscription | Signed-in |
 | `suggestItemsAction` | Return autocomplete suggestions from item history | Signed-in |
 | `getRevisionAction` | Return the current revision counter for polling | Signed-in |
@@ -246,6 +249,18 @@ Push controls are available to every signed-in user under the separate `Notifica
 
 The first successful item check starts one global `shopping_sessions` row. The checking user is the initiator; all other users' valid subscriptions receive one `shopping-session-started` notification on each registered device. Further checks, category changes, and undo operations do not create another notification. Undo intentionally does not undo the session or its notification. The existing “Finish shopping” action ends the active session idempotently. An active session with no activity for 60 minutes is closed lazily by the next successful check, allowing a new session to start without sending a timeout notification.
 
+## Temporary item images
+
+Open an item's detail dialog to upload or replace its photo. Every signed-in member can view images; only admins see the image-removal control. Rows without images keep their compact layout. Photos also remain visible in the archive while an automatic check is still reversible.
+
+“Finish shopping” explicitly completes all currently checked, unfinished items, including those moved straight to the archive by the auto-archive setting. Its control remains visible when all checked items are auto-archived. Checking, unchecking, undo, and restoring an unfinished auto-archived item preserve photos. Completion removes only the included items' photos and prevents a stale check-undo from reopening the completed trip. A shopping notification-session timeout does not complete a trip or delete photos. Restoring an item from a completed trip starts without its old photo; deleting an item also queues its photo for cleanup. History/autocomplete never retain images.
+
+Admins open **Images** below **Categories** in the admin area. This page lists thumbnails, associated item names, file sizes, total disk usage, and a quota slider from 100 MB to 10 GB (decimal units), defaulting to 1 GB. Lowering the quota preserves existing images and pauses uploads if usage exceeds it. Full storage disables upload/replace controls and asks members to contact their organization administrator. The server rejects uploads whose compressed size would cross the limit, including the old file during replacement until it is actually deleted. Older attachments are never evicted to make room.
+
+Uploads accept still JPEG, PNG, and WebP content up to 10 MiB, 8192 pixels per dimension, and 40 megapixels. The server bounds the multipart body even without `Content-Length`, verifies image format by decoding the bytes with Sharp, rejects damaged/animated content, applies orientation, strips embedded metadata, and re-encodes to WebP at quality 80 with a maximum dimension of 1200 pixels. Client filenames and MIME declarations do not control filesystem paths or determine validity. Generated UUID filenames stay under the persistent data directory. Authenticated reads use `private, no-store`; the service worker bypasses image caching.
+
+Disk writes, quota checks, and reconciliation share a SQLite write lock. New files are flushed before their association commits; a failed database transaction removes the new file and preserves the previous association. Item completion/removal and image-detachment commit a durable deletion queue before any physical removal. Cleanup retries on authenticated revision polling, list/archive/admin-image loads, uploads, and reads. Reconciliation removes interrupted-upload files without committed metadata, clears records for missing files, and measures actual on-disk bytes (including files awaiting deletion). Failed deletions remain counted and visible to admins. Cleanup is lazy: while the server is idle or stopped, queued deletions await the next authenticated interaction. Back up/restore the complete `DATA_DIR` together so the database and photos remain consistent.
+
 Push delivery happens after the item transaction commits. Missing VAPID configuration, provider errors, or an invalid recipient cannot make the item check fail; HTTP 404/410 subscriptions are removed automatically. Push is optional and checking items continues to work when it is disabled or unavailable.
 
 ## Routes and interface
@@ -258,12 +273,13 @@ Push delivery happens after the item transaction commits. Missing VAPID configur
 | `/archive` | Archived items with restore controls |
 | `/settings` | Personal notification settings, activation, test notification, and unsubscribe |
 | `/admin` | Settings, categories, and account management |
+| `/admin/images` | Admin-only photo management, storage usage, and quota |
 
 Protected pages share a header with the current user's name and role, admin navigation where applicable, and logout. The interface uses a dark, mobile-first layout with a maximum content width of about 640 px. It uses green for the brand and focus states, amber for checked/archived items, and red for destructive actions.
 
 Page navigation uses the View Transitions API when available and a CSS animation fallback otherwise. Reduced-motion preferences disable transitions. The item detail editor is a bottom sheet; it closes with its close button, Escape, or an overlay click and returns focus to its trigger. The undo snackbar announces status changes with a polite live region.
 
-The list refreshes by checking a revision number every five seconds and calls `router.refresh()` only after a change; polling pauses while the tab is hidden. A completion bar appears when checked items are present. Empty states are provided for the list, archive, and admin categories.
+The list, archive, and image-management page refresh by checking a revision number every five seconds and call `router.refresh()` only after a change; polling pauses while the tab is hidden. A completion bar appears when unfinished checked items are present, including auto-archived items. Empty states are provided for the list, archive, admin categories, and stored images.
 
 ## Accessibility
 
@@ -305,7 +321,7 @@ The root `.env.example` contains the settings normally needed for a deployment. 
 | `MEMBER_NAMES` | Comma-separated member account names created by seeding | Needed to seed member accounts |
 | `PASSWORD_LENGTH` | Length of generated initial passwords | `64` |
 | `DEFAULT_CATEGORIES` | Optional comma-separated starting categories | Empty |
-| `DATA_DIR` | Directory containing the SQLite database | `./data` locally; `/data` in Docker |
+| `DATA_DIR` | Directory containing the SQLite database and item image files | `./data` locally; `/data` in Docker |
 | `PORT` | Host port published by Compose; Next.js uses container port 3000 | `3000` |
 | `DATA_VOLUME_PATH` | Host directory for the Linux Compose variant | `./data` |
 | `COOKIE_SECURE` | Controls the cookie's `secure` flag | `false` in the example |

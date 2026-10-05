@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { getCategoriesWithItems, getAllCategories } from "@/lib/categories";
-import { getRecentItems } from "@/lib/items";
+import { getRecentItems, getPendingShoppingCount } from "@/lib/items";
+import { getImageStorageUsage } from "@/lib/item-images";
 import Header from "@/components/Header";
 import AddItemForm from "@/components/AddItemForm";
 import CategorySection from "@/components/CategorySection";
@@ -17,16 +18,13 @@ export default async function ListPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
+  const imageStorage = getImageStorageUsage();
   const categories = getCategoriesWithItems();
   const allCategories = getAllCategories();
   const recentItems = getRecentItems(10, user.role !== "ADMIN");
   const isAdmin = user.role === "ADMIN";
 
-  const checkedCount = categories.reduce(
-    (sum, cat) =>
-      sum + cat.items.filter((i) => i.status === "CHECKED").length,
-    0
-  );
+  const checkedCount = getPendingShoppingCount();
 
   return (
     <div className="spl-shell">
@@ -43,6 +41,7 @@ export default async function ListPage() {
             category={category}
             isAdmin={isAdmin}
             allCategories={allCategories}
+            imageStorage={imageStorage}
           />
         ))}
 

@@ -2,7 +2,7 @@ import type Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
 
-const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
+export const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "shoply.db");
 
 declare global {
@@ -25,6 +25,14 @@ function migrate(db: Database.Database): void {
   }
   if (!itemCols.has("note")) {
     db.exec("ALTER TABLE items ADD COLUMN note TEXT");
+  }
+  if (!itemCols.has("shopping_completed_at")) {
+    db.exec("ALTER TABLE items ADD COLUMN shopping_completed_at TEXT");
+    // Existing archived items predate attachments and are already historical.
+    db.exec("UPDATE items SET shopping_completed_at = COALESCE(archived_at, datetime('now')) WHERE archived = 1");
+  }
+  if (!itemCols.has("image_generation")) {
+    db.exec("ALTER TABLE items ADD COLUMN image_generation INTEGER NOT NULL DEFAULT 0");
   }
 
   db.exec(`
@@ -85,7 +93,7 @@ function createConnection(): Database.Database {
   const schema = fs.readFileSync(schemaPath, "utf-8");
   db.exec(schema);
 
-  migrate(db);
+  db.transaction(() => migrate(db))();
 
   return db;
 }

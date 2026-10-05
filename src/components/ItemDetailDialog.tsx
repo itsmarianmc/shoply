@@ -9,11 +9,15 @@ import {
 import { VALID_UNITS } from "@/lib/types";
 import type { Category, ItemWithNames } from "@/lib/types";
 import { displayCategoryName, displayUnit } from "@/lib/presentation";
+import ItemImage from "./ItemImage";
+import ItemImageControls from "./ItemImageControls";
+import type { ImageStorageUsage } from "@/lib/image-policy";
 
 interface Props {
   item: ItemWithNames;
   categories: Category[];
   isAdmin: boolean;
+  imageStorage: ImageStorageUsage;
   onClose: () => void;
 }
 
@@ -21,6 +25,7 @@ export default function ItemDetailDialog({
   item,
   categories,
   isAdmin,
+  imageStorage,
   onClose,
 }: Props) {
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -32,6 +37,8 @@ export default function ItemDetailDialog({
   const [categoryId, setCategoryId] = useState(item.category_id);
   const [state, setState] = useState<{ error?: string; success?: boolean }>({});
   const [isPending, startTransition] = useTransition();
+  const [imageId, setImageId] = useState(item.image_id ?? null);
+  useEffect(() => { setImageId(item.image_id ?? null); }, [item.image_id]);
 
   useEffect(() => {
     previouslyFocusedRef.current = document.activeElement instanceof HTMLElement
@@ -45,6 +52,8 @@ export default function ItemDetailDialog({
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      // Native image dialogs own Escape and focus while in the top layer.
+      if (document.querySelector("dialog[open]")) return;
       if (e.key === "Escape") {
         e.preventDefault();
         onClose();
@@ -142,6 +151,7 @@ export default function ItemDetailDialog({
         tabIndex={-1}
       >
         <div className="spl-sheet-header">
+          {imageId && <ItemImage imageId={imageId} itemName={item.name} />}
           <h2 id={`detail-title-${item.id}`} className="spl-sheet-title">
             {item.name}
           </h2>
@@ -162,6 +172,7 @@ export default function ItemDetailDialog({
         )}
 
         <div className="spl-sheet-body">
+          <ItemImageControls itemId={item.id} imageId={imageId} isAdmin={isAdmin} usage={imageStorage} onImageChange={setImageId} />
           <label className="spl-detail-label">
             <span className="spl-detail-label-text">Quantity</span>
             <input

@@ -2,14 +2,16 @@ import ItemRow from "./ItemRow";
 import { getCategoryIcon } from "@/lib/category-icons";
 import type { Category, CategoryWithItems } from "@/lib/types";
 import { displayCategoryName } from "@/lib/presentation";
+import type { ImageStorageUsage } from "@/lib/image-policy";
 
 interface Props {
   category: CategoryWithItems;
   isAdmin: boolean;
   allCategories: Category[];
+  imageStorage: ImageStorageUsage;
 }
 
-export default function CategorySection({ category, isAdmin, allCategories }: Props) {
+export default function CategorySection({ category, isAdmin, allCategories, imageStorage }: Props) {
   const isDefault = category.is_default === 1;
   const openCount = category.items.filter((item) => item.status === "ACTIVE").length;
 
@@ -31,7 +33,7 @@ export default function CategorySection({ category, isAdmin, allCategories }: Pr
       ) : (
         <div className="spl-list">
           {category.items.map((item) => (
-            <ItemRow key={item.id} item={item} isAdmin={isAdmin} categories={allCategories} />
+            <ItemRow key={item.id} item={item} isAdmin={isAdmin} categories={allCategories} imageStorage={imageStorage} />
           ))}
         </div>
       )}

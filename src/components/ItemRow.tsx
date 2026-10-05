@@ -17,15 +17,18 @@ import { getCategoryIcon } from "@/lib/category-icons";
 import type { Category, ItemWithNames } from "@/lib/types";
 import { displayCategoryName, displayUnit } from "@/lib/presentation";
 import ItemDetailDialog from "./ItemDetailDialog";
+import ItemImage from "./ItemImage";
+import type { ImageStorageUsage } from "@/lib/image-policy";
 import "@/lib/undo-global";
 
 interface Props {
   item: ItemWithNames;
   isAdmin: boolean;
   categories: Category[];
+  imageStorage: ImageStorageUsage;
 }
 
-export default function ItemRow({ item, isAdmin, categories }: Props) {
+export default function ItemRow({ item, isAdmin, categories, imageStorage }: Props) {
   const [isPending, startTransition] = useTransition();
   const [showDetail, setShowDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +86,7 @@ export default function ItemRow({ item, isAdmin, categories }: Props) {
           <i className="fa-solid fa-check spl-check" aria-hidden="true" />
         </button>
 
+        {item.image_id && <ItemImage imageId={item.image_id} itemName={item.name} />}
         <div className="spl-row-body">
           <button
             type="button"
@@ -117,6 +121,7 @@ export default function ItemRow({ item, isAdmin, categories }: Props) {
           item={item}
           categories={categories}
           isAdmin={isAdmin}
+          imageStorage={imageStorage}
           onClose={closeDetail}
         />
       )}

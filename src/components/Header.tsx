@@ -14,7 +14,7 @@ export default function Header({
   user,
 }: { user: PublicUser }) {
   const pathname = usePathname();
-  const isAdminPage = pathname === "/admin";
+  const isAdminPage = pathname === "/admin" || pathname.startsWith("/admin/");
   const isSettingsPage = pathname === "/settings";
 
   return (
