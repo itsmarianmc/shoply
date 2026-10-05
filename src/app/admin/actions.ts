@@ -8,7 +8,8 @@ import {
   deleteCategory,
 } from "@/lib/categories";
 import { createUser, deleteUser, resetPassword } from "@/lib/users";
-import { setCheckedItemBehavior } from "@/lib/settings";
+import { setCheckedItemBehavior, setShoppingScanLanguage } from "@/lib/settings";
+import { isShoppingScanLanguageCode } from "@/lib/shopping-scan-languages";
 import type { CheckedItemBehavior, Role } from "@/lib/types";
 import { assertPositiveSafeId } from "@/lib/validation";
 
@@ -111,6 +112,16 @@ export async function deleteUserAction(formData: FormData): Promise<void> {
 
 export async function updateSettingAction(formData: FormData): Promise<void> {
   await requireAdmin();
+  if (formData.has("shopping_scan_language")) {
+    const language = formData.get("shopping_scan_language");
+    if (!isShoppingScanLanguageCode(language)) {
+      throw new Error("Unsupported shopping-list recognition language.");
+    }
+    setShoppingScanLanguage(language);
+    revalidatePath("/admin");
+    return;
+  }
+
   const value = formData.get("checked_item_behavior") ? "ARCHIVE" : "KEEP_IN_LIST";
   setCheckedItemBehavior(value as CheckedItemBehavior);
   revalidatePath("/admin");

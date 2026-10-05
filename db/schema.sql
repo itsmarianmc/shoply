@@ -118,6 +118,7 @@ CREATE TABLE IF NOT EXISTS app_settings (
 
 INSERT OR IGNORE INTO app_settings (key, value) VALUES ('checked_item_behavior', 'KEEP_IN_LIST');
 INSERT OR IGNORE INTO app_settings (key, value) VALUES ('image_storage_limit_bytes', '1000000000');
+INSERT OR IGNORE INTO app_settings (key, value) VALUES ('shopping_scan_language', 'de');
 
 
 CREATE TABLE IF NOT EXISTS item_history (

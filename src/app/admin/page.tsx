@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { getAllCategories } from "@/lib/categories";
 import { listUsers } from "@/lib/users";
-import { getCheckedItemBehavior } from "@/lib/settings";
+import { getCheckedItemBehavior, getShoppingScanLanguage } from "@/lib/settings";
 import Header from "@/components/Header";
 import AdminCategoryManager from "@/components/AdminCategoryManager";
 import AdminAccountManager from "@/components/AdminAccountManager";
@@ -19,13 +19,14 @@ export default async function AdminPage() {
   const categories = getAllCategories();
   const users = listUsers();
   const behavior = getCheckedItemBehavior();
+  const scanLanguage = getShoppingScanLanguage();
 
   return (
     <div className="spl-shell">
       <Header user={user} />
 
       <main className="spl-main">
-        <AdminSettingsPanel behavior={behavior} />
+        <AdminSettingsPanel behavior={behavior} scanLanguage={scanLanguage} />
         <AdminCategoryManager categories={categories} />
         <Link href="/admin/images" className="spl-card spl-admin-images-link">
           <span><i className="fa-solid fa-images" aria-hidden="true" /> Images</span>

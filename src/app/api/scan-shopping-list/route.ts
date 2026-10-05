@@ -4,6 +4,7 @@ import {
   GeminiShoppingScanConfigurationError,
   scanShoppingListImage,
 } from "@/lib/gemini-shopping-scan";
+import { getShoppingScanLanguage } from "@/lib/settings";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -39,7 +40,8 @@ export async function POST(request: Request) {
   try {
     const result = await scanShoppingListImage(
       new Uint8Array(await image.arrayBuffer()),
-      image.type as "image/jpeg" | "image/png" | "image/webp"
+      image.type as "image/jpeg" | "image/png" | "image/webp",
+      getShoppingScanLanguage()
     );
     return NextResponse.json(result);
   } catch (error) {

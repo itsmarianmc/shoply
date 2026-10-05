@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project aims to follow [Semantic Versioning](https://semver.org/).
 
+## [1.2.1] - 2026-10-05
+
+### Added
+- An admin-only, application-wide Gemini shopping-list recognition language setting with 20 supported languages, stable language codes, a German default, server-side authorization and validation, and persistent storage.
+- A dedicated transparent monochrome Android notification badge so the status-bar symbol uses the Shoply mark instead of the full-canvas app icon.
+
+### Changed
+- Set editable text inputs, textareas, and selects to a computed minimum of 16 CSS pixels at every screen size while leaving labels, buttons, and status messages unchanged.
+- Improved Gemini shopping-list reading instructions to check each candidate against visible letter shapes and list context, report persistently unreadable lines without guessing, retain unusual readable names, and preserve the language written on the list.
+
 ## [1.2.0] - 2026-10-05
 
 ### Added

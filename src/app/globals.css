@@ -1621,6 +1621,32 @@ select.spl-input.spl-input-sm {
 	will-change: opacity;
 }
 
+/* Keep every editable text field at the iOS zoom-avoidance minimum. */
+html body :is(
+	input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]):not([type="color"]),
+	textarea,
+	select
+) {
+	font-size: max(16px, 1rem);
+}
+
+.spl-admin-language-select {
+	flex: 0 1 260px;
+	max-width: 260px;
+}
+
+@media (max-width: 639px) {
+	.spl-admin-language-setting {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.spl-admin-language-select {
+		flex: 1;
+		max-width: none;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.spl-page-enter {
 		animation: none;
