@@ -2,7 +2,7 @@
 
 Shoply is a shared household shopping list built with Next.js and SQLite. It runs as a single container with persistent SQLite storage and does not require an external database.
 
-Household members can add, check off, restore, and archive items. Administrators can also manage categories, accounts, passwords, and app settings. The interface is a mobile-first installable PWA. Its service worker caches the app shell and assets, but shopping-list data stays on the server and is not available offline.
+Household members can add, check off, restore, and archive items. Administrators can also manage categories, accounts, passwords, and app settings. The mobile-first PWA saves shopping changes locally before synchronizing them with central SQLite. After authenticated online setup on the same browser/device, the list and archive can reopen and work offline.
 
 ## Why Shoply exists
 
@@ -68,8 +68,8 @@ Open [http://localhost:3000](http://localhost:3000).
 - Duplicate merging for active items with the same name and category when both quantities are numeric and their units and notes match.
 - Admin tools for category management, account creation/deletion, password resets, and the checked-item behavior setting.
 - Role-based access: members can use the list; administrators can also manage categories, accounts, and settings.
-- Cross-user refresh by polling a revision counter every five seconds. Polling pauses while the browser tab is hidden.
-- Installable PWA with a precached app shell and available static assets. List data still requires a connection to the server.
+- Cross-user refresh through authenticated snapshot reconciliation every five seconds while reachable, plus startup, visibility, and connectivity triggers. Failed requests use bounded exponential backoff.
+- Installable PWA with an account-bound IndexedDB snapshot, durable operation queue, generic precached startup shell, conflict review, and explicit synchronization status.
 - Font Awesome CSS loads from the Pro `all.css` file configured by `FONTAWESOME_HOST`.
 
 Manual archiving of a checked item directly from its list row is not currently connected to a server action or UI control.
@@ -147,7 +147,7 @@ The app follows the Next.js App Router model:
 
 On container startup, `docker-entrypoint.sh` creates and permissions `DATA_DIR`, runs the idempotent seed script, and then starts Next.js as the unprivileged `shoply` user. Locally, `npm run seed` is optional if the database and accounts already exist. SQLite is created under `./data/shoply.db` by default.
 
-Application records stay in server-side SQLite; item image files live in `DATA_DIR/item-images`. The UI reads through Server Components and writes through Server Actions and authenticated image Route Handlers. Font Awesome CSS and webfonts load from the host in `FONTAWESOME_HOST`; without it, the app does not load a Font Awesome stylesheet.
+SQLite remains authoritative; item image files live in `DATA_DIR/item-images`. The list and archive use the existing shopping components through `src/lib/offline/`, with authenticated synchronization at `/api/offline`. Administration continues to use Server Components and Server Actions. Images use authenticated Route Handlers. Font Awesome loads from `FONTAWESOME_HOST`, with local system glyphs when that optional font is unavailable.
 
 Server-side library modules import `server-only` to prevent accidental inclusion in client bundles. The web interface and maintenance-script output are in English.
 
@@ -205,7 +205,7 @@ Roles are `ADMIN` and `MEMBER`. Item states are `ACTIVE` and `CHECKED`; checked-
 
 `item_history` has one row per normalized item name. It is updated when an item is checked or moved, not when it is first added. Administrators can reuse a remembered category; members always add items to the default category, while everyone can benefit from remembered quantity and unit defaults. If a remembered category is deleted, the item falls back to the default category.
 
-There is no client-side state-management library. Components use local state for UI interactions. The one intentional global is `window.__shoplyUndoStack`, which carries check events from `ItemRow` to `UndoSnackbarArea`. Server-rendered lists are revalidated after writes. `AutoRefresh` uses the revision counter to notice writes from other household members.
+There is no third-party client state-management library. Shopping views subscribe to the local-first store with React's `useSyncExternalStore`; components retain their own interaction state. `window.__shoplyUndoStack` carries check events from `ItemRow` to `UndoSnackbarArea`. Shopping snapshot polling replaces list/archive revision refresh, while `AutoRefresh` remains in admin image management.
 
 The TypeScript model also defines `User` and `PublicUser` (the latter omits the password hash), `Category`, `Item`, `ItemWithNames`, `CategoryWithItems`, and `ItemHistory`. Supported units are a fixed list: piece, pack, bottle, can, bag, g, kg, ml, and l.
 
@@ -213,11 +213,69 @@ Schema constraints include unique account and category names, a role check for `
 
 Server-side input validation trims values and applies length limits: item names up to 200 characters, notes up to 500, category names up to 100, and account names up to 50. Quantities must be positive when updated.
 
-The service worker caches the app shell, CSS, fonts, and icons. SQLite data remains on the server, so the PWA does not provide offline list editing or viewing.
+The worker precaches generic `/offline` HTML and build-versioned first-party assets. Authenticated HTML, RSC responses, APIs, and item images are network-only. Private shopping data and pending operations live in account-bound IndexedDB records, outside HTTP/navigation caches. See the offline section below.
+
+## Offline shopping and synchronization
+
+### First use and startup
+
+Serve a production build over HTTPS (localhost also works). Open Shoply online, sign in, and wait for **Offline startup ready on this device** and **Connected · synchronized**. Setup saves the complete list/archive, categories, checked-item behavior, and up to 500 useful history/suggestion records. It also installs the generic startup shell and required first-party scripts/styles/icons. Development mode deliberately disables the service worker.
+
+After setup, `/list`, `/archive`, reloads, direct navigation, back/forward navigation, and PWA launches can restore the device's last saved account snapshot. The same shopping components handle online and offline work. Startup restores IndexedDB first, then contacts the server; failed refreshes keep the snapshot and queue. A fresh installation, a different browser/profile, cleared/evicted storage, or a device that never completed setup cannot supply offline shopping data. If the shell exists without a usable private snapshot, it explains the need to connect and sign in. A device without any installed worker/assets needs a network connection even to load that fallback.
+
+The small status panel distinguishes connected/acknowledged, offline/local, pending/synchronizing, and attention states. Expand it to inspect operation IDs, pending intentions, conflicts, retry, or download a private JSON recovery reference. It never labels a pending operation synchronized. A storage error explicitly says the change was not saved; keep form input open, free storage, and retry. Corrupt or unknown local schema versions are retained rather than automatically overwritten. The panel offers an explicit destructive reset after warning about lost pending work; exports are for recovery/reference and are not automatically imported.
+
+Administration, settings management, AI scans, and image changes require the server. Item image bytes are never persisted in IndexedDB or Cache Storage; thumbnails use an offline/unavailable placeholder. System glyphs keep essential buttons usable without the external icon font.
+
+### Local commits, account identity, and logout
+
+`shoply-private-offline` IndexedDB version 1 stores account records containing the server snapshot, ordered operations, identity links, local IDs, and durable blocked results. Every mutation updates the working snapshot/queue in one read/write transaction and waits for transaction completion before reporting success. Strict transaction durability is requested where supported. Each new item has a UUID local reference independent of its eventual numeric SQLite ID; queued dependencies refer to preceding operation receipts.
+
+`shoply_account` is a public random cache selector, **not a credential**. The HttpOnly session remains the only authentication credential. Each user receives a durable random account key; recreating a user or a database does not accidentally reuse another account's queue. Every sync request verifies the session, account ownership, current role, and applicable item ownership. Cached roles and client timestamps grant no server authority. Known expired/revoked sessions lock the local view and retain its queue; signing into the original account online unlocks recovery. When disconnected, revocation cannot be discovered until a request reaches the server, so cached data is a working snapshot and does not establish continuing authorization.
+
+Logout requires a connection and either an empty acknowledged queue or an explicit **Discard pending changes and sign out** choice. Local data is removed under the same cross-tab synchronization lock as logout. Other tabs hide the old account. If someone bypasses logout and signs into another account, the prior account's queue stays isolated and locked until the original account signs back in; it is never uploaded as the new user. No password or session token is stored in IndexedDB, localStorage, or the generic shell. Browser storage is private to the origin/profile, not encrypted against someone who controls that browser or its developer tools; use separate OS/browser profiles for mutually untrusted people.
+
+Shoply requests persistent storage after a local mutation and checks the browser's persistence result. This is a best-effort eviction reduction, never a guarantee. Browser clearing, eviction, profile loss, or device loss can permanently remove unacknowledged changes. Server data can rebuild an acknowledged snapshot, but cannot recover changes it never received. Keep SQLite, sync records, and photos together in server backups.
+
+### Protocol and conflicts
+
+The internal version-1 protocol uses same-origin authenticated POSTs to `/api/offline` for snapshots and one operation at a time. Snapshot POSTs also avoid the generic GET caches of older workers during upgrades. A GET snapshot is available for authenticated diagnostics. Responses are `private, no-store`; POSTs require JSON, the exact request origin, a custom protocol header, and a streaming 64 KB body limit. Reverse proxies must preserve the public scheme/host/origin consistently. Request/session failures leave the queue intact. Retryable network/server failures back off to roughly one minute; startup, becoming visible, browser online events, manual retry, and a foreground timer provide recovery without Background Sync. Browser online/offline hints alone do not establish reachability.
+
+SQLite applies the mutation, history, session effects, image-deletion intent, local/server identity mapping, and idempotency receipt in one transaction under a write lock. UUID operation IDs stay stable across retries; a repeated ID with altered content is rejected. A lost response is retried against its stored result. Web Locks serialize tabs; an IndexedDB lease is the fallback, with server receipts/dependency checks protecting expired-lease overlaps. The queue drains in order, stopping at an operation that needs a decision. Completion is a group of individually acknowledged item operations, so earlier success survives a later conflict.
+
+Database triggers version item fields and lifecycle transitions from **all** write paths, including older Server Actions and administration. Tombstones preserve deletion history. Different-field edits merge when the lifecycle is compatible; equal effective field edits are satisfied without overwriting other fields. Different edits to the same field retain the local patch and shared value for explicit review. Version checks detect change-away-and-back sequences. The same effective check in the same lifecycle is a no-op that preserves original attribution, history, and notification intent. A later check cycle, incompatible check/uncheck, archive/completion change, changed deletion target, removed category, or revoked permission blocks the intention rather than recreating/deleting/overwriting silently.
+
+The panel offers **Use shared state**, **Apply my change to latest state**, or, for an ambiguous addition, **Keep as separate item**. Resolutions receive a new durable operation ID and preconditions bound to the exact shared values shown for review. They conflict again if those fields change while the user decides; background refresh cannot silently weaken that check. Deleted items are never recreated by an edit resolution. Completed items require explicit restoration from the archive before unchecking. Choosing the shared result for one operation does not silently discard later dependent intentions; those are checked independently. Exports retain the original intention when no useful automated resolution is possible.
+
+Numeric quantities merge only for a duplicate actually seen by the device, with matching unit/note and unchanged duplicate version. Retries cannot add the quantity twice. An unseen concurrent addition remains a separate item; a changed intended duplicate requires review. Members keep the default category and may rename only their own items; only admins may move items between categories.
+
+**Finish shopping** captures only the device's checked unfinished item identities, including auto-archived checks, and their preconditions in one local transaction. It never replays the unrestricted legacy completion action. Changes to a captured item's relevant version create an item conflict. The identical check already completed elsewhere can be satisfied as a no-op. Items added/checked later remain untouched, including their photos. Image detachment and completion commit together; physical image cleanup runs after the transaction and retries through normal image maintenance. Delayed checks suppress shopping-started pushes but retain history/session bookkeeping. Live push delivery is at most one attempt, with possible omissions after crashes or provider failures.
+
+### Migrations and deployment updates
+
+`src/lib/db.ts` applies `db/offline.sql` transactionally after existing item-column migrations on first server access. It is idempotent for existing and fresh databases, initializes versions for existing items, and adds `offline_accounts`, `sync_receipts`, `sync_item_links`, `item_versions`, and item triggers. It does not rewrite existing shopping data. Receipt IDs, identity links, and tombstones currently have **no time-based retention limit**: do not truncate them while devices may still retry. They consume disk over time. Future retention requires an explicit device/queue invalidation protocol. Restoring an old server backup can remove acknowledgements and break retry guarantees; recover device queues against the restored state deliberately rather than assuming idempotency survived a database rollback.
+
+Builds give the generic shell a new precache revision and precache the build's first-party assets. New workers wait while existing clients use the previous build. **Update Shoply** activates a waiting worker and reloads open Shoply windows; submitted local work is durable, but finish typing any unsaved form text first. Normal activation also occurs after old clients close. The new worker removes the previous generic runtime caches, serves list/archive from its matching generic shell, and never runtime-caches private responses. Keep old deployed assets available during the transition where possible; a browser without enough storage or an incomplete worker installation cannot promise offline startup. The current private schema/protocol rejects unsupported versions without deleting pending work.
+
+### Reproducible offline tests
+
+Use a supported Node LTS runtime compatible with the pinned native `better-sqlite3` dependency (Node 20/22; Node 26 does not build that dependency). Run:
+
+```sh
+npm ci
+npm test
+npm run lint
+npm run typecheck
+npm run build
+npx playwright install chromium
+npm run test:e2e
+```
+
+Playwright starts the **production** build on localhost:3107 using a new throwaway SQLite database under ignored `.npm-cache/offline-e2e-*`; it never points at your normal `DATA_DIR`. The suite uses test-only accounts and mocked/local side effects. Browser tests include persistent-profile close/reopen, worker-controlled offline navigation, reloads, persisted mutations, a second client, lost committed responses, conflicts, completion, sessions, tab/account isolation, storage failures, shell-only fallback, and worker activation. Chromium offline emulation can leave worker requests online after browser restart, so the tests explicitly abort worker-owned API requests too and check that offline mutations have not reached SQLite. No production database, external push provider, OS-installed PWA launcher, physical phone, iOS/Safari, Firefox, or production deployment is established by these checks.
 
 ## Server Actions
 
-There is no public REST API. Route-level Server Actions provide the app's read/write interactions.
+Server Actions support administration and legacy online callers. Shopping components use the authenticated same-origin `/api/offline` protocol described below; this is an internal versioned API, not an unauthenticated integration API.
 
 | Action | Purpose | Authorization |
 | --- | --- | --- |
@@ -247,13 +305,13 @@ Shoply optionally uses standard Web Push with VAPID. Configure `VAPID_PUBLIC_KEY
 
 Push controls are available to every signed-in user under the separate `Notifications` category on `/settings`. Activation checks browser support, requests notification permission, waits for the Serwist service worker, reuses or creates a `pushManager` subscription, and saves it for the authenticated user. The same category offers a test notification. Deactivation unsubscribes the local browser and removes only that user's endpoint on the server. Browsers without Push API support receive an explanatory message. Production requires HTTPS; localhost is supported for local development. On iOS/iPadOS, Web Push requires an installed Home Screen PWA (16.4 or newer).
 
-The first successful item check starts one global `shopping_sessions` row. The checking user is the initiator; all other users' valid subscriptions receive one `shopping-session-started` notification on each registered device. Further checks, category changes, and undo operations do not create another notification. Undo intentionally does not undo the session or its notification. The existing “Finish shopping” action ends the active session idempotently. An active session with no activity for 60 minutes is closed lazily by the next successful check, allowing a new session to start without sending a timeout notification.
+The first successful check starts one global `shopping_sessions` row. A live check may send one `shopping-session-started` notification to other users' subscriptions. Delayed/offline checks retain session/history effects but suppress stale shopping-started pushes. Retries never attempt the same push twice; delivery remains best-effort, so a crash after the transaction and before sending can omit a push. Undo does not undo session/history effects. Scoped shopping completion ends the session only when no checked unfinished items remain, preserving another member's later shopping activity. The legacy unrestricted Server Action remains available to existing server callers. Sessions idle for 60 minutes close lazily on the next successful check.
 
 ## Temporary item images
 
 Open an item's detail dialog to upload or replace its photo. Every signed-in member can view images; only admins see the image-removal control. Rows without images keep their compact layout. Photos also remain visible in the archive while an automatic check is still reversible.
 
-“Finish shopping” explicitly completes all currently checked, unfinished items, including those moved straight to the archive by the auto-archive setting. Its control remains visible when all checked items are auto-archived. Checking, unchecking, undo, and restoring an unfinished auto-archived item preserve photos. Completion removes only the included items' photos and prevents a stale check-undo from reopening the completed trip. A shopping notification-session timeout does not complete a trip or delete photos. Restoring an item from a completed trip starts without its old photo; deleting an item also queues its photo for cleanup. History/autocomplete never retain images.
+“Finish shopping” completes the checked unfinished identities captured in the device's view, including those moved straight to the archive by the auto-archive setting, subject to server preconditions. Its control remains visible when all checked items are auto-archived. Checking, unchecking, undo, and restoring an unfinished auto-archived item preserve photos. Completion removes only the included items' photos and prevents a stale check-undo from reopening the completed trip. A shopping notification-session timeout does not complete a trip or delete photos. Restoring an item from a completed trip starts without its old photo; deleting an item also queues its photo for cleanup. History/autocomplete never retain images.
 
 Admins open **Images** below **Categories** in the admin area. This page lists thumbnails, associated item names, file sizes, total disk usage, and a quota slider from 100 MB to 10 GB (decimal units), defaulting to 1 GB. Lowering the quota preserves existing images and pauses uploads if usage exceeds it. Full storage disables upload/replace controls and asks members to contact their organization administrator. The server rejects uploads whose compressed size would cross the limit, including the old file during replacement until it is actually deleted. Older attachments are never evicted to make room.
 
@@ -279,7 +337,7 @@ Protected pages share a header with the current user's name and role, admin navi
 
 Page navigation uses the View Transitions API when available and a CSS animation fallback otherwise. Reduced-motion preferences disable transitions. The item detail editor is a bottom sheet; it closes with its close button, Escape, or an overlay click and returns focus to its trigger. The undo snackbar announces status changes with a polite live region.
 
-The list, archive, and image-management page refresh by checking a revision number every five seconds and call `router.refresh()` only after a change; polling pauses while the tab is hidden. A completion bar appears when unfinished checked items are present, including auto-archived items. Empty states are provided for the list, archive, admin categories, and stored images.
+List/archive reconciliation overlays pending local operations on incoming snapshots, avoiding replacement of unsent intent. Admin image management retains revision-based refresh. A completion bar appears when unfinished checked items are present, including auto-archived items. Empty states are provided for the list, archive, admin categories, and stored images.
 
 ## Accessibility
 
@@ -393,6 +451,8 @@ docker compose exec shoply /delete "Account Name"
 | `seed` | `node scripts/seed.cjs` | Idempotently create schema, accounts, and categories |
 | `test` | `vitest run` | Run the Vitest suites |
 | `lint` | `eslint . --max-warnings=0` | Run ESLint without warnings |
+| `typecheck` | `tsc --noEmit` | Check application and test types |
+| `test:e2e` | `playwright test` | Run production offline Chromium tests in an isolated database |
 
 ## Testing and CI
 
@@ -419,7 +479,7 @@ The manual admin-guard verification script is `scripts/verify-admin-guard.ts`. I
 DATA_DIR=/tmp/shoply-guard-test npx tsx --import ./scripts/register-test-hooks.mjs scripts/verify-admin-guard.ts
 ```
 
-There are no browser-based end-to-end tests. After UI changes, manually check the admin guards, move-menu keyboard behavior, the detail dialog (open/save/delete, Escape, and focus return), undo behavior, the complete-shopping action, cross-user refresh, and PWA asset caching with the browser offline.
+Production Chromium browser tests live in `e2e/offline.spec.ts`. After UI changes, also check admin guards, keyboard navigation, focus return, screen-reader output, and physical installed devices; automated desktop browser tests do not verify those devices.
 
 ## Deployment and operations
 
@@ -439,7 +499,7 @@ The default Compose service uses `restart: unless-stopped` and a relative persis
 | Low | Move-menu options expose a static `aria-selected="false"` | Active choice may not be conveyed reliably to screen readers; `src/components/ItemRow.tsx` |
 | Low | Undo snackbar may appear after a race-condition no-op | Its undo action then has no effect; `src/app/list/actions.ts` and `src/components/ItemRow.tsx` |
 | Low | History retains the old category name after a category is deleted | The category ID is set to null, but the text snapshot remains; `db/schema.sql` and `src/lib/items.ts` |
-| Low | No E2E browser tests | Dialog, undo, PWA, and multi-user behavior are not covered in a browser |
+| Low | Physical-device coverage | Desktop Chromium automation does not verify installed iOS/Android apps or other browsers |
 
 `.dockerignore` excludes local environment files, database files, build output, logs, caches, and Git metadata from the Docker build context, while keeping `.env.example` available to Compose.
 
@@ -461,7 +521,7 @@ The default Compose service uses `restart: unless-stopped` and a relative persis
 
 ## Analysis scope
 
-This README reflects a static inspection of the repository and its configuration. The workflow and commands above were confirmed from the current files. On 2026-09-17, ESLint, all 43 Vitest tests, and the Next.js production build completed successfully; the build also completed linting and TypeScript validity checks. Browser and device behavior, the production host's TLS/proxy setup, and the operational backup procedure were not independently verified.
+On 2026-11-02, all 140 Vitest tests, ESLint, typecheck, and the production build passed. All 20 production Chromium browser cases passed, with focused reruns for real-photo placeholders and the final legacy-tab worker-update path. See [offline validation](docs/offline-validation.md) for exact run order, the acceptance matrix, environment details, preserved work, and explicit verification limits. Physical installed devices, other browsers, live push delivery, external deployments, TLS/proxy configuration, and operational backup restoration were not verified.
 
 The local `.env` and SQLite database files were not inspected. Verify the deployment's Font Awesome host, cross-origin font access, TLS, and backup setup separately. Font Awesome Pro assets are commercial and excluded from Git; confirm that the hosted-file setup complies with the applicable Pro license.
 

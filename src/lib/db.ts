@@ -94,6 +94,7 @@ function createConnection(): Database.Database {
   db.exec(schema);
 
   db.transaction(() => migrate(db))();
+  db.transaction(() => db.exec(fs.readFileSync(path.join(process.cwd(), "db", "offline.sql"), "utf-8")))();
 
   return db;
 }

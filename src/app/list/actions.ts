@@ -10,6 +10,7 @@ import {
   completeShopping,
   deleteItem,
   updateItem,
+  getItemById,
   undoCheckItem,
   getAutocompleteSuggestions,
 } from "@/lib/items";
@@ -78,13 +79,26 @@ export async function updateItemAction(
   _prev: { error?: string; success?: boolean },
   formData: FormData
 ): Promise<{ error?: string; success?: boolean }> {
-  await requireUser();
+  const user = await requireUser();
   try {
     const itemId = assertPositiveSafeId(formData.get("itemId"), "Item ID");
-    const fields = validateItemFields("valid", {
+    const hasName = formData.has("name");
+    const fields = validateItemFields(hasName ? formData.get("name") : "valid", {
       quantity: formData.get("quantity"), unit: formData.get("unit"), note: formData.get("note"),
     });
-    updateItem(itemId, fields);
+    if (hasName) {
+      const item = getItemById(itemId);
+      if (!item) return { error: "Item not found." };
+      if (fields.name !== item.name && user.role !== "ADMIN" && item.added_by_user_id !== user.id) {
+        return { error: "You can only rename items you added." };
+      }
+    }
+    updateItem(itemId, {
+      quantity: fields.quantity,
+      unit: fields.unit,
+      note: fields.note,
+      ...(hasName ? { name: fields.name } : {}),
+    });
     revalidatePath("/list");
     revalidatePath("/archive");
     return { success: true };

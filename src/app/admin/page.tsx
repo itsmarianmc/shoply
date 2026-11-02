@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import AdminCategoryManager from "@/components/AdminCategoryManager";
 import AdminAccountManager from "@/components/AdminAccountManager";
 import AdminSettingsPanel from "@/components/AdminSettingsPanel";
+import OnlineOnly from "@/components/OnlineOnly";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function AdminPage() {
   const scanLanguage = getShoppingScanLanguage();
 
   return (
-    <div className="spl-shell">
+    <OnlineOnly userId={user.id} admin><div className="spl-shell">
       <Header user={user} />
 
       <main className="spl-main">
@@ -41,6 +42,6 @@ export default async function AdminPage() {
           Back to list
         </Link>
       </footer>
-    </div>
+    </div></OnlineOnly>
   );
 }

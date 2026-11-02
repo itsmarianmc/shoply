@@ -9,6 +9,7 @@ vi.mock("@/lib/db", () => {
   db.pragma("foreign_keys = ON");
   const schema = fs.readFileSync(path.join(process.cwd(), "db", "schema.sql"), "utf-8");
   db.exec(schema);
+  db.exec(fs.readFileSync(path.join(process.cwd(), "db", "offline.sql"), "utf-8"));
   return { db, DATA_DIR: fs.mkdtempSync(path.join(os.tmpdir(), "shoply-images-test-")) };
 });
 

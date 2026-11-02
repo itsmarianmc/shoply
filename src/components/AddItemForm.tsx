@@ -8,10 +8,11 @@ import {
   useState,
   useTransition,
 } from "react";
-import { addItemAction, suggestItemsAction } from "@/app/list/actions";
+import { addItemAction, suggestItemsAction } from "@/lib/offline/actions";
 import { displayCategoryName, displayUnit } from "@/lib/presentation";
 import ShoppingScanDialog from "./ShoppingScanDialog";
 import type { ShoppingScanResult } from "@/lib/shopping-scan-types";
+import { onlineAvailable, useOffline } from "@/lib/offline/client";
 
 type Suggestion = {
   display_name: string;
@@ -27,6 +28,7 @@ export default function AddItemForm({
 }: {
   recentItems?: Suggestion[];
 }) {
+  const offline = useOffline();
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listboxId = useId();
@@ -129,6 +131,7 @@ export default function AddItemForm({
   }
 
   async function scanImage(file: File) {
+    if (!onlineAvailable()) { setError("AI scanning requires a connection."); return; }
     setError(null);
     setIsScanning(true);
     try {
@@ -305,7 +308,7 @@ export default function AddItemForm({
           ref={scanButtonRef}
           type="button"
           className="spl-icon-btn spl-scan-btn"
-          disabled={isScanning}
+          disabled={isScanning || !offline.connected || offline.locked}
           onClick={() => scanInputRef.current?.click()}
           aria-label={isScanning ? "Einkaufszettel wird gescannt" : "Einkaufszettel scannen"}
           title="Einkaufszettel scannen"
@@ -323,6 +326,7 @@ export default function AddItemForm({
           <i className="fa-solid fa-plus" aria-hidden="true" />
         </button>
       </form>
+      {!offline.connected && <span className="spl-row-sub">AI scanning requires a connection.</span>}
       {isScanning && <div className="spl-scan-status" role="status" aria-live="polite">Einkaufszettel wird gescannt …</div>}
       {error && <div className="spl-error" role="alert">{error}</div>}
 
@@ -362,7 +366,7 @@ export default function AddItemForm({
                 tabIndex={-1}
               >
                 <span className="spl-suggestion-name">
-                  {highlightMatch(s.display_name, inputValue || "")}
+                  <span>{highlightMatch(s.display_name, inputValue || "")}</span>
                   {qtyStr && (
                     <span className="spl-suggestion-qty">{qtyStr}</span>
                   )}

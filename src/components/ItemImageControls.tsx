@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deleteImageAction } from "@/app/admin/images/actions";
 import { IMAGE_QUOTA_MESSAGE, MAX_IMAGE_BYTES, type ImageStorageUsage } from "@/lib/image-policy";
+import { onlineAvailable, serverIdFor, synchronize, useOffline } from "@/lib/offline/client";
 
 interface Props {
   itemId: number;
@@ -14,6 +15,8 @@ interface Props {
 }
 
 export default function ItemImageControls({ itemId, imageId, isAdmin, usage, onImageChange }: Props) {
+  const offline = useOffline();
+  const serverItemId = serverIdFor(itemId);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [storage, setStorage] = useState(usage);
@@ -23,13 +26,14 @@ export default function ItemImageControls({ itemId, imageId, isAdmin, usage, onI
   const full = storage.usedBytes >= storage.limitBytes;
 
   function upload(file: File | undefined) {
+    if (!onlineAvailable() || !serverItemId) { setError("Images require a connection and a synchronized item."); return; }
     if (!file) return;
     setError(null);
     if (file.size > MAX_IMAGE_BYTES) { setError("Choose an image of 10 MB or smaller."); return; }
     startTransition(async () => {
       try {
         const data = new FormData();
-        data.set("itemId", String(itemId));
+        data.set("itemId", String(serverItemId));
         data.set("image", file);
         const response = await fetch("/api/item-images", { method: "POST", body: data });
         const result = await response.json();
@@ -39,6 +43,7 @@ export default function ItemImageControls({ itemId, imageId, isAdmin, usage, onI
           return;
         }
         onImageChange(result.imageId);
+        void synchronize();
         setStorage(result.usage);
         router.refresh();
       } catch { setError("Could not upload the image. Please try again."); }
@@ -47,12 +52,14 @@ export default function ItemImageControls({ itemId, imageId, isAdmin, usage, onI
   }
 
   function remove() {
+    if (!onlineAvailable()) { setError("Image management requires a connection."); return; }
     setError(null);
     startTransition(async () => {
       try {
         const result = await deleteImageAction(imageId!);
         if (result.error) { setError(result.error); return; }
         onImageChange(null);
+        void synchronize();
         router.refresh();
       } catch { setError("Could not remove the image. Please try again."); }
     });
@@ -61,14 +68,14 @@ export default function ItemImageControls({ itemId, imageId, isAdmin, usage, onI
   return (
     <div className="spl-detail-label">
       <span className="spl-detail-label-text">Image</span>
-      <div className="spl-image-actions">
+      {(!offline.connected || !serverItemId || offline.locked) ? <span className="spl-row-sub">Image upload, replacement, and deletion require a connection and a synchronized item.</span> : <div className="spl-image-actions">
         <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden disabled={pending || full}
           aria-label={imageId ? "Replace image" : "Upload image"} onChange={(event) => upload(event.target.files?.[0])} />
         <button type="button" className="spl-btn spl-btn-secondary spl-btn-sm" disabled={pending || full} onClick={() => inputRef.current?.click()}>
           {pending ? "Saving…" : imageId ? "Replace image" : "Upload image"}
         </button>
         {isAdmin && imageId && <button type="button" className="spl-btn spl-btn-danger spl-btn-sm" disabled={pending} onClick={remove}>Remove image</button>}
-      </div>
+      </div>}
       <span className="spl-row-sub">JPEG, PNG or WebP · up to 10 MB. Removed when shopping is finished.</span>
       {full && <span className="spl-error" role="status">{IMAGE_QUOTA_MESSAGE}</span>}
       {error && <span className="spl-error" role="alert">{error}</span>}

@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { restoreItemAction } from "@/app/archive/actions";
+import { restoreItemAction } from "@/lib/offline/actions";
 import type { ItemWithNames } from "@/lib/types";
 import { displayUnit } from "@/lib/presentation";
 import ItemImage from "./ItemImage";
 
 function formatDate(iso: string | null): string {
   if (!iso) return "";
+  if (iso.startsWith("pending:")) return "Saved locally";
   const d = new Date(iso.includes("T") ? iso : `${iso}Z`);
   return d.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }

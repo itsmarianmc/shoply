@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface ConfirmDialogProps {
+  title?: string;
+  cancelLabel?: string;
   message: string;
   confirmLabel: string;
   onConfirm: () => void;
@@ -10,6 +13,8 @@ interface ConfirmDialogProps {
 }
 
 export default function ConfirmDialog({
+  title = "Item verwerfen",
+  cancelLabel = "Abbrechen",
   message,
   confirmLabel,
   onConfirm,
@@ -18,8 +23,11 @@ export default function ConfirmDialog({
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
+    if (!mounted) return;
     previousFocusRef.current = document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null;
@@ -28,7 +36,7 @@ export default function ConfirmDialog({
       const previousFocus = previousFocusRef.current;
       if (previousFocus && document.contains(previousFocus)) previousFocus.focus();
     };
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -60,7 +68,8 @@ export default function ConfirmDialog({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onCancel]);
 
-  return (
+  if (!mounted) return null;
+  return createPortal(
     <div className="spl-overlay spl-confirm-overlay" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onCancel();
     }}>
@@ -72,17 +81,17 @@ export default function ConfirmDialog({
         aria-labelledby="scan-confirm-title"
         tabIndex={-1}
       >
-        <h2 id="scan-confirm-title" className="spl-sheet-title">Item verwerfen</h2>
+        <h2 id="scan-confirm-title" className="spl-sheet-title">{title}</h2>
         <p className="spl-confirm-message">{message}</p>
         <div className="spl-confirm-actions">
           <button type="button" className="spl-btn spl-btn-danger" onClick={onConfirm}>
             {confirmLabel}
           </button>
           <button ref={cancelRef} type="button" className="spl-btn spl-btn-secondary" onClick={onCancel}>
-            Abbrechen
+            {cancelLabel}
           </button>
         </div>
       </div>
-    </div>
+    </div>, document.body
   );
 }

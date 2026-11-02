@@ -5,6 +5,7 @@ import { getImageStorageUsage, listStoredImages } from "@/lib/item-images";
 import Header from "@/components/Header";
 import AutoRefresh from "@/components/AutoRefresh";
 import AdminImageManager from "@/components/AdminImageManager";
+import OnlineOnly from "@/components/OnlineOnly";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +16,11 @@ export default async function AdminImagesPage() {
   const usage = getImageStorageUsage();
   const images = listStoredImages();
   return (
-    <div className="spl-shell">
+    <OnlineOnly userId={user.id} admin><div className="spl-shell">
       <Header user={user} />
       <AutoRefresh />
       <main className="spl-main"><AdminImageManager usage={usage} images={images} /></main>
       <footer className="spl-footer"><Link href="/admin" className="spl-link-muted">Back to admin</Link></footer>
-    </div>
+    </div></OnlineOnly>
   );
 }

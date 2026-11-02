@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 import type { PublicUser, Role } from "./types";
+import { accountKeyFor } from "./offline/account";
 
 const SESSION_COOKIE = "shoply_session";
 const SESSION_TTL_DAYS = 30;
@@ -40,6 +41,10 @@ export async function createSession(userId: number): Promise<void> {
     path: "/",
     expires: new Date(expiresAt),
   });
+  // This public cache selector is never accepted as authentication.
+  store.set("shoply_account", accountKeyFor(userId), {
+    secure: process.env.COOKIE_SECURE === "true", sameSite: "strict", path: "/", expires: new Date(expiresAt),
+  });
 }
 
 export async function destroySession(): Promise<void> {
@@ -49,6 +54,7 @@ export async function destroySession(): Promise<void> {
     db.prepare("DELETE FROM sessions WHERE id = ?").run(token);
   }
   store.delete(SESSION_COOKIE);
+  store.delete("shoply_account");
 }
 
 interface SessionRow {
@@ -68,7 +74,7 @@ export async function getCurrentUser(): Promise<PublicUser | null> {
       `SELECT u.id, u.name, u.role
        FROM sessions s
        JOIN users u ON u.id = s.user_id
-       WHERE s.id = ? AND s.expires_at > datetime('now')`
+       WHERE s.id = ? AND julianday(s.expires_at) > julianday('now')`
     )
     .get(token) as SessionRow | undefined;
 

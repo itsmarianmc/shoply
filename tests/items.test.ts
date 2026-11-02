@@ -108,6 +108,33 @@ describe("updateItem", () => {
       .get(row.id) as any;
     expect(updated).toMatchObject({ quantity: null, unit: null, note: null });
   });
+
+  it("renames in place without changing other item fields or its image attachment", () => {
+    addItem("Rename source", USER_ID, { quantity: 2, unit: "kg", note: "keep note" });
+    addItem("Rename target", USER_ID);
+    const row = getDefaultItems().find((i) => i.name === "Rename source")!;
+    checkItem(row.id, USER_ID);
+    db.prepare("INSERT INTO item_images (id, item_id, item_name, size_bytes) VALUES (?, ?, ?, ?)")
+      .run("00000000-0000-4000-8000-000000000001", row.id, row.name, 100);
+    const before = db.prepare("SELECT * FROM items WHERE id = ?").get(row.id) as ItemWithNames;
+    const imageBefore = db.prepare("SELECT * FROM item_images WHERE item_id = ?").get(row.id);
+    const countBefore = db.prepare("SELECT COUNT(*) AS count FROM items").get();
+
+    updateItem(row.id, { name: "  Rename target  ", quantity: row.quantity, unit: row.unit, note: row.note });
+
+    expect(db.prepare("SELECT * FROM items WHERE id = ?").get(row.id))
+      .toEqual({ ...before, name: "Rename target" });
+    expect(db.prepare("SELECT * FROM item_images WHERE item_id = ?").get(row.id)).toEqual(imageBefore);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM items").get()).toEqual(countBefore);
+  });
+
+  it.each(["   ", "x".repeat(201)])("rejects an invalid rename before changing other fields", (name) => {
+    const row = getDefaultItems().find((i) => i.name === "Bread")!;
+    const before = db.prepare("SELECT * FROM items WHERE id = ?").get(row.id);
+
+    expect(() => updateItem(row.id, { name, quantity: 42, unit: "kg", note: "must not save" })).toThrow("Item name");
+    expect(db.prepare("SELECT * FROM items WHERE id = ?").get(row.id)).toEqual(before);
+  });
 });
 
 describe("category memory", () => {
