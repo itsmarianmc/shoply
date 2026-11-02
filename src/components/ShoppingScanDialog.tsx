@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { addItemAction } from "@/app/list/actions";
+import { addItemAction } from "@/lib/offline/actions";
 import ConfirmDialog from "./ConfirmDialog";
 import { confirmScannedItem } from "@/lib/shopping-scan-client";
 import type { ShoppingScanResult } from "@/lib/shopping-scan-types";

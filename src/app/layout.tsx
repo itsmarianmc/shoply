@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { connection } from "next/server";
 import "./globals.css";
+import OfflineLifecycle from "@/components/OfflineLifecycle";
 
 export const metadata: Metadata = {
   title: "Shoply",
@@ -37,8 +38,9 @@ export default async function RootLayout({
   const fontAwesomeStylesheet = process.env.FONTAWESOME_HOST?.trim();
 
   return (
-    <html lang="en">
+    <html lang="en" data-local-icons="true" suppressHydrationWarning>
       <body>
+        <OfflineLifecycle />
         {fontAwesomeStylesheet ? (
           <link
             rel="stylesheet"

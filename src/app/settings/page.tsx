@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getVapidPublicKey } from "@/lib/push-config";
 import Header from "@/components/Header";
 import PushNotificationControl from "@/components/PushNotificationControl";
+import OnlineOnly from "@/components/OnlineOnly";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export default async function SettingsPage() {
   if (!user) redirect("/login");
 
   return (
-    <div className="spl-shell">
+    <OnlineOnly userId={user.id}><div className="spl-shell">
       <Header user={user} />
 
       <main className="spl-main">
@@ -25,6 +26,6 @@ export default async function SettingsPage() {
           Back to list
         </Link>
       </footer>
-    </div>
+    </div></OnlineOnly>
   );
 }

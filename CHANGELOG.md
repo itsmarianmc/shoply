@@ -5,6 +5,43 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project aims to follow [Semantic Versioning](https://semver.org/).
 
+## [2.0.0] - 2026-11-02
+
+### Added
+- Integrated local-first shopping-list and archive views using the existing shopping components. After authenticated online setup in the same browser/profile, saved data remains usable across offline navigation, reloads, and browser reopening; first-use and missing-snapshot screens explain when an online connection is required.
+- Account-bound IndexedDB storage for item state, categories, checked-item behavior, and useful history/suggestions. Supported mutations wait for an atomic local transaction before reporting success, request persistent storage where available, and explicitly report unavailable, corrupt, unsupported, evicted, or full storage.
+- A durable ordered operation queue with stable UUIDs, local/server item identity links, and receipt-based dependencies for items created, edited, checked, undone, completed, restored, or deleted before synchronization.
+- An internal versioned `/api/offline` protocol for authenticated snapshots and individual mutations. SQLite commits operation receipts with mutations, identity mappings, history, session effects, and image-deletion intent so retries after a lost response do not repeat durable effects.
+- Idempotent initialization through `db/offline.sql`, applied after legacy item-column migrations. New account identities, receipts, identity links, item versions, and deletion tombstones support existing and fresh databases; receipts, links, and tombstones have no automatic retention expiry.
+- Field and lifecycle concurrency controls covering existing server write paths as well as synchronization. Compatible independent-field edits merge, equal effective actions preserve existing attribution, and incompatible field, check-cycle, archive, deletion, category, or completion changes remain available for review.
+- Durable conflict choices to accept shared state, apply a saved change against the values shown for review, or keep an ambiguous addition as a separate item. Resolution operations receive new IDs and checked preconditions, retain dependent intentions, and cannot silently recreate a deleted item.
+- An accessible connection and saved-changes panel with saving, offline, pending, synchronized, and attention states; inspectable operation IDs; manual retry; private recovery-file export; and an explicitly confirmed local-data reset.
+- Item-name editing in the detail sheet: members can rename items they added, administrators can rename any item, and both the existing Server Action and synchronization path enforce those restrictions.
+- Expanded regression coverage to 140 unit/integration tests and 20 production Chromium browser cases. Added Playwright and `fake-indexeddb` development dependencies, an isolated production test server, `typecheck` and `test:e2e` scripts, and browser checks in CI.
+
+### Changed
+- Replaced generic service-worker runtime caching with a precached public `/offline` shell and versioned first-party assets. Authenticated HTML, RSC responses, APIs, and item images remain network-only; private shopping snapshots are stored separately in IndexedDB.
+- Service-worker updates wait for activation and provide an offline-readiness check. Explicit updates persist a generic reload intent and refresh older open windows after activation, including clients without a controller-change listener, while retaining locally submitted work.
+- Replaced list/archive `AutoRefresh` rendering with snapshot reconciliation that overlays pending local operations. Synchronization runs on startup, visibility and connectivity changes, manual retry, and a foreground timer with bounded backoff; server reachability is checked rather than inferred solely from `navigator.onLine`.
+- Finish shopping now captures the checked unfinished identities in the device's view, including auto-archived items, instead of replaying unrestricted server completion. Per-item acknowledgements preserve partial success, incompatible changes become conflicts, only included images are detached, and another member's remaining unfinished items keep the shopping session open.
+- Quantity merging requires a compatible duplicate actually seen by the device and an unchanged server version. Stable receipts prevent repeated quantity increases, unseen concurrent additions stay separate, and changed intended duplicates require review.
+- Delayed offline checks preserve history and shopping-session bookkeeping while suppressing stale shopping-started pushes. Live notification attempts remain best-effort and are not repeated for an acknowledged operation retry.
+- Sign-out now requires a connection and either an acknowledged queue or explicit discard of pending work. Expired/revoked sessions lock the local view without deleting its queue; another account cannot upload it, and signing back into the original account can recover it.
+- Administration, settings, AI scanning, and image mutations clearly require a connection, including administration pages that were already open when connectivity was lost. Images use offline placeholders, and essential controls have system-glyph fallbacks without depending on the optional external icon font.
+- Moved Finish shopping above category sections and made its bar sticky below the measured header, with narrow-screen wrapping, touch-friendly controls, and scroll offsets that keep focused content visible. Expanded the README and added `docs/offline-validation.md` with setup, migration, retention, backup, storage-loss, account, conflict, test-order, and verification-limit details.
+
+### Fixed
+- Reconciled synchronized temporary item identities during subsequent quantity merges, image actions, and dependent operations so the local and server references continue to address one item.
+- Preserved an item editor's opening baseline during background refreshes so saving an open sheet does not silently overwrite a field changed while the user was typing.
+- Prevented synchronization-driven rerenders from repeatedly extending undo-snackbar timeouts, deduplicated repeated notifications for the same item, and kept snackbars below modal sheets so they cannot cover Save controls.
+- Rendered confirmation dialogs through a body-level portal so the sticky header cannot constrain the sign-out/discard dialog outside the mobile viewport; retained focus handling and Escape support.
+- Wrapped autocomplete suggestion names separately from quantity labels to preserve their intended spacing and alignment.
+
+### Security
+- Synchronization validates the current server session, account ownership, role, item permissions, and operation preconditions. Mutation requests require the same origin, JSON, a custom protocol header, and a streaming 64 KB body limit; reused operation IDs with altered content are rejected.
+- Kept the public account cache selector separate from the HttpOnly session credential. No passwords or session tokens are stored in IndexedDB or the generic shell, private responses use `private, no-store`, and account switching and logout isolate or clear local data without silently deleting unsynchronized work.
+- Corrected session-expiry checks to compare SQLite date values with `julianday`, rejecting ISO-formatted sessions that expired earlier on the current day.
+
 ## [1.2.1] - 2026-10-05
 
 ### Added

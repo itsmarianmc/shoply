@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { synchronize } from "@/lib/offline/client";
 
 const MINIMUM_REFRESH_DURATION_MS = 1750;
 
@@ -148,6 +149,7 @@ export default function PullToRefresh() {
   }, []);
 
   const refreshPage = useCallback(() => {
+    if (["/list", "/archive", "/offline"].includes(location.pathname)) return synchronize();
     return new Promise<void>((resolve) => {
       refreshResolverRef.current = resolve;
       startTransition(() => router.refresh());

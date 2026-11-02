@@ -19,7 +19,7 @@ export function addItem(
   opts?: { quantity?: number | null; unit?: string | null; note?: string | null },
   
   canCategorize = true
-): void {
+): number {
   const validated = validateItemFields(name, opts);
   const trimmed = validated.name;
 
@@ -29,12 +29,13 @@ export function addItem(
   const unit = validated.unit ?? resolved.unit ?? null;
   const note = validated.note;
 
-  db.prepare(
+  const inserted = db.prepare(
     `INSERT INTO items (name, quantity, unit, note, category_id, added_by_user_id, status, sort_order)
      VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', 0)`
   ).run(trimmed, quantity, unit, note, categoryId, userId);
 
   bumpRevision();
+  return Number(inserted.lastInsertRowid);
 }
 
 
@@ -212,9 +213,9 @@ export function getArchivedItems(): ItemWithNames[] {
 }
 
 
-export function restoreItem(itemId: number): void {
+export function restoreItem(itemId: number, cleanup = true): void {
   restoreItemTransaction(itemId);
-  maintainImageStorage();
+  if (cleanup) maintainImageStorage();
 }
 
 const restoreItemTransaction = db.transaction((itemId: number): void => {
@@ -259,30 +260,32 @@ export function getItemById(itemId: number): ItemWithNames | undefined {
 
 export function updateItem(
   itemId: number,
-  opts: { quantity?: number | null; unit?: string | null; note?: string | null }
+  opts: { name?: string; quantity?: number | null; unit?: string | null; note?: string | null }
 ): void {
+  const name = opts.name === undefined ? null : validateItemFields(opts.name).name;
   const quantity = parseQuantity(opts.quantity);
   const unit = parseUnit(opts.unit);
   const note = opts.note === undefined ? null : validateItemFields("valid", { note: opts.note }).note;
 
   const result = db.prepare(
     `UPDATE items
-     SET quantity = ?,
+     SET name = COALESCE(?, name),
+         quantity = ?,
          unit = ?,
          note = ?
      WHERE id = ?`
-  ).run(quantity, unit, note, itemId);
+  ).run(name, quantity, unit, note, itemId);
 
   if (result.changes > 0) bumpRevision();
 }
 
 
-export function deleteItem(itemId: number): void {
+export function deleteItem(itemId: number, cleanup = true): void {
   const result = db.prepare(
     `DELETE FROM items WHERE id = ? AND (status = 'CHECKED' OR archived = 1)`
   ).run(itemId);
   if (result.changes > 0) bumpRevision();
-  maintainImageStorage();
+  if (cleanup) maintainImageStorage();
 }
 
 

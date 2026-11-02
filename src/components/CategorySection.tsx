@@ -7,11 +7,12 @@ import type { ImageStorageUsage } from "@/lib/image-policy";
 interface Props {
   category: CategoryWithItems;
   isAdmin: boolean;
+  currentUserId: number;
   allCategories: Category[];
   imageStorage: ImageStorageUsage;
 }
 
-export default function CategorySection({ category, isAdmin, allCategories, imageStorage }: Props) {
+export default function CategorySection({ category, isAdmin, currentUserId, allCategories, imageStorage }: Props) {
   const isDefault = category.is_default === 1;
   const openCount = category.items.filter((item) => item.status === "ACTIVE").length;
 
@@ -33,7 +34,7 @@ export default function CategorySection({ category, isAdmin, allCategories, imag
       ) : (
         <div className="spl-list">
           {category.items.map((item) => (
-            <ItemRow key={item.id} item={item} isAdmin={isAdmin} categories={allCategories} imageStorage={imageStorage} />
+            <ItemRow key={item.id} item={item} isAdmin={isAdmin} canRename={isAdmin || item.added_by_user_id === currentUserId} categories={allCategories} imageStorage={imageStorage} />
           ))}
         </div>
       )}

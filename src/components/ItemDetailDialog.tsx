@@ -4,19 +4,21 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import {
   updateItemAction,
   deleteItemAction,
-  rememberCategoryAction,
-} from "@/app/list/actions";
+} from "@/lib/offline/actions";
 import { VALID_UNITS } from "@/lib/types";
+import { MAX_ITEM_NAME_LENGTH } from "@/lib/validation";
 import type { Category, ItemWithNames } from "@/lib/types";
 import { displayCategoryName, displayUnit } from "@/lib/presentation";
 import ItemImage from "./ItemImage";
 import ItemImageControls from "./ItemImageControls";
 import type { ImageStorageUsage } from "@/lib/image-policy";
+import type { SyncItem } from "@/lib/offline/types";
 
 interface Props {
   item: ItemWithNames;
   categories: Category[];
   isAdmin: boolean;
+  canRename: boolean;
   imageStorage: ImageStorageUsage;
   onClose: () => void;
 }
@@ -25,12 +27,15 @@ export default function ItemDetailDialog({
   item,
   categories,
   isAdmin,
+  canRename,
   imageStorage,
   onClose,
 }: Props) {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const baseAtOpen = useRef(item as SyncItem);
   const firstInputRef = useRef<HTMLInputElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const [name, setName] = useState(item.name);
   const [quantity, setQuantity] = useState(item.quantity?.toString() ?? "");
   const [unit, setUnit] = useState(item.unit ?? "");
   const [note, setNote] = useState(item.note ?? "");
@@ -94,22 +99,16 @@ export default function ItemDetailDialog({
       try {
       const fd = new FormData();
       fd.set("itemId", String(item.id));
+      if (canRename && name !== baseAtOpen.current.name) fd.set("name", name);
       if (quantityNum !== null) fd.set("quantity", String(quantityNum));
       if (unit) fd.set("unit", unit);
       if (note) fd.set("note", note);
+      if (isAdmin) fd.set("categoryId", String(categoryId));
 
-      const result = await updateItemAction({}, fd);
+      const result = await updateItemAction({}, fd, baseAtOpen.current);
       if (result.error) {
         setState({ error: result.error });
         return;
-      }
-
-      if (isAdmin && categoryId !== item.category_id) {
-        const catFd = new FormData();
-        catFd.set("itemId", String(item.id));
-        catFd.set("categoryId", String(categoryId));
-        const categoryResult = await rememberCategoryAction(catFd);
-        if (categoryResult.error) { setState({ error: categoryResult.error }); return; }
       }
 
       setState({ success: true });
@@ -173,10 +172,25 @@ export default function ItemDetailDialog({
 
         <div className="spl-sheet-body">
           <ItemImageControls itemId={item.id} imageId={imageId} isAdmin={isAdmin} usage={imageStorage} onImageChange={setImageId} />
+          {canRename && (
+            <label className="spl-detail-label">
+              <span className="spl-detail-label-text">Name</span>
+              <input
+                ref={firstInputRef}
+                type="text"
+                required
+                maxLength={MAX_ITEM_NAME_LENGTH}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="spl-input spl-input-sm"
+                disabled={isPending}
+              />
+            </label>
+          )}
           <label className="spl-detail-label">
             <span className="spl-detail-label-text">Quantity</span>
             <input
-              ref={firstInputRef}
+              ref={canRename ? undefined : firstInputRef}
               type="number"
               min="0"
               step="any"

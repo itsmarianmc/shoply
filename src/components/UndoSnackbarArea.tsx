@@ -1,21 +1,23 @@
 "use client";
 
 import { useRef, useEffect, useState, useTransition } from "react";
-import { undoCheckItemAction } from "@/app/list/actions";
+import { undoCheckItemAction } from "@/lib/offline/actions";
 import type { UndoEntry } from "@/lib/undo-global";
 
 const UNDO_TIMEOUT_MS = 6000;
 
 
 export default function UndoSnackbarArea() {
-  const [items, setItems] = useState<UndoEntry[]>([]);
+  const [items, setItems] = useState<(UndoEntry & { noticeId: number })[]>([]);
+  const noticeId = useRef(0);
 
   useEffect(() => {
     function checkStack() {
       const stack = window.__shoplyUndoStack;
       if (stack && stack.length > 0) {
         window.__shoplyUndoStack = [];
-        setItems((prev) => [...prev, ...stack]);
+        const fresh = [...new Map(stack.map(entry => [entry.itemId, entry])).values()].map(entry => ({ ...entry, noticeId: ++noticeId.current }));
+        setItems((prev) => [...prev.filter(entry => !fresh.some(next => next.itemId === entry.itemId)), ...fresh]);
       }
     }
     const timer = setInterval(checkStack, 200);
@@ -31,7 +33,7 @@ export default function UndoSnackbarArea() {
   return (
     <div className="spl-undo-area" aria-label="Undo notifications">
       {items.map((item) => (
-        <UndoItem key={item.itemId} item={item} onDone={() => removeItem(item.itemId)} />
+        <UndoItem key={item.noticeId} item={item} onDone={() => removeItem(item.itemId)} />
       ))}
     </div>
   );
@@ -41,17 +43,19 @@ function UndoItem({ item, onDone }: { item: UndoEntry; onDone: () => void }) {
   const [visible, setVisible] = useState(true);
   const [isPending, startTransition] = useTransition();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     timeoutRef.current = setTimeout(() => {
       setVisible(false);
-      onDone();
+      onDoneRef.current();
     }, UNDO_TIMEOUT_MS);
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [onDone]);
+  }, [item.itemId]);
 
   function handleUndo() {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);

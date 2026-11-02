@@ -12,7 +12,7 @@ import {
   checkItemAction,
   uncheckItemAction,
   moveItemAction,
-} from "@/app/list/actions";
+} from "@/lib/offline/actions";
 import { getCategoryIcon } from "@/lib/category-icons";
 import type { Category, ItemWithNames } from "@/lib/types";
 import { displayCategoryName, displayUnit } from "@/lib/presentation";
@@ -24,11 +24,12 @@ import "@/lib/undo-global";
 interface Props {
   item: ItemWithNames;
   isAdmin: boolean;
+  canRename: boolean;
   categories: Category[];
   imageStorage: ImageStorageUsage;
 }
 
-export default function ItemRow({ item, isAdmin, categories, imageStorage }: Props) {
+export default function ItemRow({ item, isAdmin, canRename, categories, imageStorage }: Props) {
   const [isPending, startTransition] = useTransition();
   const [showDetail, setShowDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -121,6 +122,7 @@ export default function ItemRow({ item, isAdmin, categories, imageStorage }: Pro
           item={item}
           categories={categories}
           isAdmin={isAdmin}
+          canRename={canRename}
           imageStorage={imageStorage}
           onClose={closeDetail}
         />
@@ -143,6 +145,7 @@ function MoveMenu({ item, categories, isPending }: MoveMenuProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const menuId = useId();
+  const [error, setError] = useState("");
 
   const options = categories.filter((category) => category.id !== item.category_id);
   const busy = isPending || isMoving;
@@ -230,7 +233,8 @@ function MoveMenu({ item, categories, isPending }: MoveMenuProps) {
     formData.set("itemId", String(item.id));
     formData.set("categoryId", String(categoryId));
     startMoving(async () => {
-      await moveItemAction(formData);
+      try { await moveItemAction(formData); setError(""); }
+      catch (e) { setError(e instanceof Error ? e.message : "Could not save this move."); }
     });
   }
 
@@ -238,6 +242,7 @@ function MoveMenu({ item, categories, isPending }: MoveMenuProps) {
 
   return (
     <div className="spl-move" ref={wrapRef}>
+      {error && <span role="alert" className="spl-error">{error}</span>}
       <button
         type="button"
         ref={triggerRef}
