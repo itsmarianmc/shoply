@@ -22,7 +22,7 @@ import type { ImageStorageUsage } from "@/lib/image-policy";
 import "@/lib/undo-global";
 
 interface Props {
-  item: ItemWithNames;
+  item: ItemWithNames & { pendingFrom?: string };
   isAdmin: boolean;
   canRename: boolean;
   categories: Category[];
@@ -34,6 +34,7 @@ export default function ItemRow({ item, isAdmin, canRename, categories, imageSto
   const [showDetail, setShowDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isChecked = item.status === "CHECKED";
+  const pendingDescription = useId();
   const nameButtonRef = useRef<HTMLButtonElement>(null);
 
   function toggle() {
@@ -47,8 +48,8 @@ export default function ItemRow({ item, isAdmin, canRename, categories, imageSto
           stack.push({ itemId: item.id, itemName: item.name });
           window.__shoplyUndoStack = stack;
         }
-      } catch {
-        setError("Could not update the item. Please try again.");
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "This change could not be saved on this device. Check saved changes and connection.");
       }
     });
   }
@@ -64,7 +65,7 @@ export default function ItemRow({ item, isAdmin, canRename, categories, imageSto
 
   const quantityDisplay =
     item.quantity != null
-      ? `${item.quantity}${item.unit ? " " + displayUnit(item.unit) : "×"}`
+      ? <>{item.quantity}{item.unit ? " " + displayUnit(item.unit) : <i className="fa-solid fa-x" aria-hidden="true" />}</>
       : "";
 
   const metaParts = [
@@ -79,6 +80,8 @@ export default function ItemRow({ item, isAdmin, canRename, categories, imageSto
           type="button"
           className="spl-checkbox"
           data-checked={isChecked}
+          data-pending={!!item.pendingFrom}
+          aria-describedby={item.pendingFrom ? pendingDescription : undefined}
           aria-pressed={isChecked}
           aria-label={isChecked ? "Mark as active" : "Mark as checked"}
           onClick={toggle}
@@ -86,8 +89,8 @@ export default function ItemRow({ item, isAdmin, canRename, categories, imageSto
         >
           <i className="fa-solid fa-check spl-check" aria-hidden="true" />
         </button>
+        {item.pendingFrom && <span id={pendingDescription} className="spl-sr-only">Saved on this device; waiting to synchronize</span>}
 
-        {item.image_id && <ItemImage imageId={item.image_id} itemName={item.name} />}
         <div className="spl-row-body">
           <button
             type="button"
@@ -110,6 +113,7 @@ export default function ItemRow({ item, isAdmin, canRename, categories, imageSto
             <span className="spl-item-meta">{metaParts.join(" · ")}</span>
           )}
         </div>
+        {item.image_id && <ItemImage imageId={item.image_id} itemName={item.name} />}
         {error && <div className="spl-error" role="alert">{error}</div>}
 
         {isAdmin && (

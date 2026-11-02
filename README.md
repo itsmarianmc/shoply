@@ -213,7 +213,7 @@ Schema constraints include unique account and category names, a role check for `
 
 Server-side input validation trims values and applies length limits: item names up to 200 characters, notes up to 500, category names up to 100, and account names up to 50. Quantities must be positive when updated.
 
-The worker precaches generic `/offline` HTML and build-versioned first-party assets. Authenticated HTML, RSC responses, APIs, and item images are network-only. Private shopping data and pending operations live in account-bound IndexedDB records, outside HTTP/navigation caches. See the offline section below.
+The worker precaches generic `/offline` HTML and build-versioned first-party assets. Authenticated HTML, RSC responses, APIs, and item image requests are network-only. Private shopping data, pending operations, and downloaded photo blobs live in account-bound IndexedDB records, outside HTTP/navigation caches. See the offline section below.
 
 ## Offline shopping and synchronization
 
@@ -225,7 +225,9 @@ After setup, `/list`, `/archive`, reloads, direct navigation, back/forward navig
 
 The small status panel distinguishes connected/acknowledged, offline/local, pending/synchronizing, and attention states. Expand it to inspect operation IDs, pending intentions, conflicts, retry, or download a private JSON recovery reference. It never labels a pending operation synchronized. A storage error explicitly says the change was not saved; keep form input open, free storage, and retry. Corrupt or unknown local schema versions are retained rather than automatically overwritten. The panel offers an explicit destructive reset after warning about lost pending work; exports are for recovery/reference and are not automatically imported.
 
-Administration, settings management, AI scans, and image changes require the server. Item image bytes are never persisted in IndexedDB or Cache Storage; thumbnails use an offline/unavailable placeholder. System glyphs keep essential buttons usable without the external icon font.
+Administration, settings management, AI scans, and image changes require the server. Available item photos download automatically while online and remain viewable offline, including the enlarged view after a reload. Photos are private IndexedDB blobs scoped to the authenticated account; the server response must confirm that identity before a download is stored. Reads require an unlocked account and an image referenced in its saved snapshot. Logout/reset removes that account's blobs, and subsequent refreshes prune removed/replaced photos. Photos never enter HTTP or service-worker caches. Local database version 2 adds the photo store without changing existing snapshots or queues.
+
+Photo caching is optional, capped at 50 MiB per account and skipped when the browser reports less than 15% free quota. Active-list photos download first. Missing, oversized, undownloaded, or storage-limited photos show a placeholder; a photo-cache failure does not acknowledge or discard shopping changes. Browser eviction removes photos too. System glyphs keep essential buttons usable without the external icon font. Pending checks use a gray checkmark until acknowledged, then the normal green checkmark. Add/check actions save locally first and do not require server reachability; persistence failures still show an explicit error.
 
 ### Local commits, account identity, and logout
 

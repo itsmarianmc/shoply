@@ -27,7 +27,7 @@ export default function ArchiveRow({ item }: { item: ItemWithNames }) {
 
   const quantityDisplay =
     item.quantity != null
-      ? ` ${item.quantity}${item.unit ? " " + displayUnit(item.unit) : "×"}`
+      ? <> {item.quantity}{item.unit ? " " + displayUnit(item.unit) : <i className="fa-solid fa-x" aria-hidden="true" />}</>
       : "";
 
   return (

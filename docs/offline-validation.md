@@ -6,18 +6,19 @@ The implementation uses the existing shopping components in both connected and d
 
 | Check | Result |
 | --- | --- |
-| `npm test` | **140 passed**, 16 suites, including all existing tests |
+| `npm test` | **145 passed**, 17 suites, including account-scoped photo storage, v1-to-v2 IndexedDB migration, quota failures, and authenticated image-response isolation |
 | `npm run lint` | Passed, zero warnings allowed |
 | `npm run typecheck` | Passed |
 | `npm run build` | Passed; generated the production Serwist worker |
-| `npx playwright test --reporter=line` | **20 passed**, 3.3 minutes, production server |
-| Strengthened real-photo/storage browser case | **1 passed**, 8.5 seconds; rerun after adding a real image upload and explicit placeholder assertion |
-| Final legacy-tab worker-update browser case | **1 passed**, 10.0 seconds, against a rebuilt production app after the final update-path fix |
+| `npm run test:e2e` | **22 passed**, 3.7 minutes, production server; includes gray pending checks and photo-cache restart/logout coverage |
+| Final strengthened photo/check/keyboard cases | **4 passed**, 39.7 seconds, after a fresh production rebuild; additionally verifies photo-cache eviction placeholders and auto-archived photos after browser restart |
 | `git diff --check` | Passed |
 
 Local environment: Windows, isolated Node **22.23.4**, Next.js **15.5.25**, Playwright **1.64.1**, Chromium **156.0.8078.4**. The machine's default Node 26 could not compile the pinned `better-sqlite3` dependency; the test runtime was installed under ignored `.npm-cache/node22`. Browser execution required local socket/browser access outside the restrictive command sandbox. All checks above completed successfully there. Next.js emitted a non-fatal workspace-root warning about a separate parent `package-lock.json`; that parent file was not changed.
 
-The full 20-case run preceded the final narrow legacy-tab update fix. That fix was followed by a new production build and the strengthened update case, which explicitly removes a legacy tab's reload listeners and verifies the worker refreshes it while retaining queued work. The full suite was not repeated after that final focused change. Worker reload intent lives in a small generic cache record because workers can restart between events; refresh waits until activation completes and a new shell announces readiness. This record contains no account data.
+The full suite includes the strengthened worker-update case, which explicitly removes a legacy tab's reload listeners and verifies the worker refreshes it while retaining queued work. Worker reload intent lives in a small generic cache record because workers can restart between events; refresh waits until activation completes and a new shell announces readiness. This record contains no account data.
+
+After the full run, the photo cases were strengthened with explicit cache-eviction and auto-archive assertions; the four affected photo/check/keyboard cases were rerun successfully against a fresh production build. The full 22-case suite was not repeated after these final focused checks.
 
 The browser harness creates a fresh SQLite database under `.npm-cache/offline-e2e-*`, seeds two test-only accounts, and starts the actual production Next.js build on localhost:3107. Tests never point at the application's normal data directory. Browser profiles, traces, screenshots, test databases, and dependency caches are ignored.
 
@@ -39,7 +40,7 @@ The browser harness creates a fresh SQLite database under `.npm-cache/offline-e2
 | 12. Account isolation and multiple tabs | Browser tests append from two tabs, require explicit discard at logout, hide the old account, retain a locked original queue across a different-account login, then recover under the original login. IndexedDB tests serialize concurrent appends and exercise lease exclusion. |
 | 13. Missing/full/unavailable/corrupt storage | Browser tests inject unavailable IndexedDB and a full-store write failure, showing explicit unsaved status. Storage tests prove aborted writes preserve old data and unknown/corrupt schemas are retained. Startup without a usable snapshot shows a fallback. |
 | 14. Worker update and no prior setup | Browser test changes the served production worker, observes waiting activation, activates/reloads, refreshes a simulated legacy tab without reload listeners, and reopens offline with pending work intact. A shell-only profile explains the online-setup requirement; cache inspection excludes authenticated list/archive/login/API responses. |
-| 15. Online-only restrictions and image placeholders | Browser tests use a real uploaded photo, verify its offline placeholder and disabled image/scan controls, and verify an already-open admin page becomes unavailable offline. |
+| 15. Online-only restrictions and private image caching | Browser tests upload real photos, view cached thumbnails/enlargements offline, reopen a persistent browser profile offline, verify logout removes the private blobs, and verify disabled image/scan controls. Missing photos retain placeholders. An already-open admin page becomes unavailable offline. |
 | Accessibility interactions | Browser test covers keyboard entry, detail-sheet focus/Escape/return, saving, undo, category-menu navigation, and reload with reduced motion enabled. Live regions, existing mobile styles, and native details controls remain in use. |
 
 Chromium page-level offline emulation can leave a restarted service worker's requests online. Tests therefore also abort worker-owned sync requests and verify server state before reconnect. This avoids passing an apparently offline test that was still mutating SQLite online.
@@ -53,6 +54,7 @@ Chromium page-level offline emulation can leave a restarted service worker's req
 - `db/offline.sql` is an idempotent server migration applied after legacy column migrations. It adds versions/tombstones, account identities, links, and durable receipts. Receipts/links/tombstones have no automatic retention expiry and need disk capacity planning. Server backups must preserve them with the database/photos; rollback to an older backup can lose idempotency evidence.
 - Push delivery remains best-effort and at most one attempt. Delayed offline checks suppress pushes while retaining session/history effects. Actual provider delivery was mocked or absent in test databases.
 - Synchronization stops at the first operation needing review, preserving global queue order. Independent later changes wait until that problem is resolved. Completion already acknowledged before a later conflict remains completed.
+- IndexedDB version 2 adds an account-scoped photo store while preserving existing snapshots/queues. Photo reads require an unlocked account and a saved reference; downloads require a matching server-authenticated account header. Optional caching is capped at 50 MiB per account and avoids the last 15% of reported browser quota. Refresh prunes obsolete photos; logout/reset deletes account data and photos together. Photos remain outside generic HTTP/worker caches and may be evicted by the browser.
 
 ## Existing work preserved
 

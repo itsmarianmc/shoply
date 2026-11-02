@@ -106,8 +106,8 @@ export default function AddItemForm({
         setShowRecent(false);
         setActiveIndex(-1);
         inputRef.current?.focus();
-      } catch {
-        setError("Could not save the item. Please try again.");
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "This item could not be saved on this device. Check saved changes and connection.");
       }
     });
   }
@@ -124,8 +124,8 @@ export default function AddItemForm({
         setShowSuggestions(false);
         setShowRecent(false);
         setActiveIndex(-1);
-      } catch {
-        setError("Could not save the item. Please try again.");
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "This item could not be saved on this device. Check saved changes and connection.");
       }
     });
   }
@@ -345,7 +345,7 @@ export default function AddItemForm({
           {visibleItems.map((s, i) => {
             const qtyStr =
               s.default_quantity != null
-                ? `${s.default_quantity}${s.default_unit ? " " + displayUnit(s.default_unit) : "×"}`
+                ? <>{s.default_quantity}{s.default_unit ? " " + displayUnit(s.default_unit) : <i className="fa-solid fa-x" aria-hidden="true" />}</>
                 : "";
             return (
               <div

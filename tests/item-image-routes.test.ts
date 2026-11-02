@@ -58,6 +58,7 @@ describe("image routes and admin actions", () => {
     expect(read.status).toBe(200);
     expect(read.headers.get("content-type")).toBe("image/webp");
     expect(read.headers.get("cache-control")).toBe("private, no-store");
+    expect(read.headers.get("x-shoply-account")).toMatch(/^[a-f0-9-]{36}$/);
     const next = await POST(uploadRequest());
     expect(next.status).toBe(200);
     expect((await GET(new Request("http://localhost"), context(result.imageId))).status).toBe(404);
