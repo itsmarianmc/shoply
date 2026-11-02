@@ -160,7 +160,7 @@ export default function ItemDetailDialog({
             onClick={onClose}
             aria-label="Close"
           >
-            <i className="fa-solid fa-xmark" aria-hidden="true" />
+            <i className="fa-solid fa-x" aria-hidden="true" />
           </button>
         </div>
 

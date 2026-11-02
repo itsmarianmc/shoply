@@ -59,7 +59,7 @@ export default function SyncStatus() {
         <p>{pending} pending {pending === 1 ? "change" : "changes"}. Changes stay on this device until acknowledged by the server.</p>
         {state.error && <p role="alert">{state.error}</p>}
         {state.locked && <a className="spl-link-muted" href="/login">Sign in again to recover this account’s changes</a>}
-        {!state.connected && <p>Administration, settings, AI scanning, and image changes require a connection. Item images are not stored offline.</p>}
+        {!state.connected && <p>Administration, settings, AI scanning, and image changes require a connection. Downloaded photos are available offline; other photos show a placeholder.</p>}
         {persistent === false && <p>The browser may remove local storage. Device storage is not a backup.</p>}
         {problem && operation && <div className="spl-sync-problem" role="group" aria-label="Resolve saved change">
           <h3>{operation.kind === "complete" ? "Trip item not completed" : "Saved change needs review"}: {operation.base?.name ?? operation.fields?.name ?? "Item"}</h3>

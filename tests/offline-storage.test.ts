@@ -40,14 +40,14 @@ describe("account-bound IndexedDB", () => {
   it("reports full/unavailable storage without acknowledging a save", async () => {
     await changeAccount("a", () => fixture()); const before = await readAccount("a");
     const prototype = Object.getPrototypeOf((await new Promise<IDBDatabase>((resolve) => {
-      const request = indexedDB.open("shoply-private-offline", 1); request.onsuccess = () => resolve(request.result);
+      const request = indexedDB.open("shoply-private-offline", 2); request.onsuccess = () => resolve(request.result);
     })).transaction("accounts", "readwrite").objectStore("accounts"));
     const put = vi.spyOn(prototype, "put").mockImplementation(() => { throw new DOMException("Storage full", "QuotaExceededError"); });
     await expect(changeAccount("a", current => { current!.nextId--; return current; })).rejects.toMatchObject({ name: "QuotaExceededError" });
     put.mockRestore(); expect(await readAccount("a")).toEqual(before);
   });
   it("preserves unsupported/corrupt data for explicit recovery instead of resetting it", async () => {
-    const request = indexedDB.open("shoply-private-offline", 1);
+    const request = indexedDB.open("shoply-private-offline", 2);
     const database = await new Promise<IDBDatabase>(resolve => { request.onsuccess = () => resolve(request.result); });
     await new Promise<void>(resolve => {
       const tx = database.transaction("accounts", "readwrite"); tx.objectStore("accounts").put({ schema: 999, pending: "retain" }, "a"); tx.oncomplete = () => resolve();

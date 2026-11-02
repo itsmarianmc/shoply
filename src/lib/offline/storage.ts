@@ -2,13 +2,18 @@ import { EDIT_FIELDS, type LocalAccount, type SyncItem } from "./types";
 
 const DATABASE = "shoply-private-offline";
 const STORE = "accounts";
+const IMAGES = "images";
+export const LOCAL_IMAGE_LIMIT = 50 * 1024 * 1024;
 let opened: Promise<IDBDatabase> | undefined;
 
 function database(): Promise<IDBDatabase> {
   if (!opened) opened = new Promise<IDBDatabase>((resolve, reject) => {
     if (!globalThis.indexedDB) { reject(new Error("Local storage is unavailable. Changes cannot be saved.")); return; }
-    const request = indexedDB.open(DATABASE, 1);
-    request.onupgradeneeded = () => request.result.createObjectStore(STORE);
+    const request = indexedDB.open(DATABASE, 2);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(STORE)) request.result.createObjectStore(STORE);
+      if (!request.result.objectStoreNames.contains(IMAGES)) request.result.createObjectStore(IMAGES);
+    };
     request.onerror = () => reject(request.error);
     request.onblocked = () => reject(new Error("Close other Shoply windows to upgrade local storage."));
     request.onsuccess = () => {
@@ -103,8 +108,79 @@ export async function rawAccount(key: string): Promise<unknown> {
 export async function removeAccount(key: string): Promise<void> {
   const db = await database();
   await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE, "readwrite");
+    const tx = db.transaction([STORE, IMAGES], "readwrite");
     tx.objectStore(STORE).delete(key);
+    const images = tx.objectStore(IMAGES).openCursor(IDBKeyRange.bound([key, ""], [key, "\uffff"]));
+    images.onsuccess = () => { const cursor = images.result; if (cursor) { cursor.delete(); cursor.continue(); } };
+    tx.oncomplete = () => resolve();
+    tx.onabort = tx.onerror = () => reject(tx.error);
+  });
+}
+
+// Photos are optional private data, never HTTP/worker cache entries. Check the
+// account and current snapshot in the same transaction as every blob access.
+function permitsImage(account: LocalAccount | undefined, imageId: string): boolean {
+  return !!account && !account.locked && account.snapshot.items.some(item => item.image_id === imageId);
+}
+
+export async function readImage(key: string, imageId: string): Promise<Blob | undefined> {
+  const db = await database();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([STORE, IMAGES]);
+    let blob: Blob | undefined;
+    const account = tx.objectStore(STORE).get(key);
+    account.onsuccess = () => {
+      if (!permitsImage(account.result, imageId)) return;
+      const image = tx.objectStore(IMAGES).get([key, imageId]);
+      image.onsuccess = () => { blob = image.result as Blob | undefined; };
+    };
+    tx.oncomplete = () => resolve(blob);
+    tx.onabort = tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function storeImage(key: string, imageId: string, blob: Blob): Promise<void> {
+  const db = await database();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction([STORE, IMAGES], "readwrite");
+    let failure: unknown;
+    const account = tx.objectStore(STORE).get(key);
+    account.onsuccess = () => {
+      if (!permitsImage(account.result, imageId)) return;
+      const store = tx.objectStore(IMAGES);
+      let bytes = blob.size;
+      const entries = store.openCursor(IDBKeyRange.bound([key, ""], [key, "\uffff"]));
+      entries.onsuccess = () => {
+        try {
+          const cursor = entries.result;
+          if (cursor) {
+            const id = (cursor.key as string[])[1]!;
+            if (!permitsImage(account.result, id)) cursor.delete();
+            else if (id !== imageId) bytes += (cursor.value as Blob).size;
+            cursor.continue(); return;
+          }
+          if (bytes > LOCAL_IMAGE_LIMIT) throw new Error("The 50 MB offline photo limit was reached. Some photos will show a placeholder offline.");
+          store.put(blob, [key, imageId]);
+        } catch (error) { failure = error; tx.abort(); }
+      };
+    };
+    tx.oncomplete = () => resolve();
+    tx.onabort = tx.onerror = () => reject(failure ?? tx.error);
+  });
+}
+
+export async function pruneImages(key: string): Promise<void> {
+  const db = await database();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction([STORE, IMAGES], "readwrite");
+    const account = tx.objectStore(STORE).get(key);
+    account.onsuccess = () => {
+      const entries = tx.objectStore(IMAGES).openCursor(IDBKeyRange.bound([key, ""], [key, "\uffff"]));
+      entries.onsuccess = () => {
+        const cursor = entries.result;
+        if (cursor) { if (!permitsImage(account.result, (cursor.key as string[])[1]!)) cursor.delete(); cursor.continue(); }
+      };
+    };
     tx.oncomplete = () => resolve();
     tx.onabort = tx.onerror = () => reject(tx.error);
   });

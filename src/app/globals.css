@@ -726,6 +726,13 @@ button.spl-btn-icon-only.spl-btn-sm {
 	box-shadow: var(--spl-glow-green);
 }
 
+.spl-checkbox[data-checked="true"][data-pending="true"] {
+	background: var(--spl-text-faint);
+	border-color: var(--spl-text-faint);
+	color: var(--spl-bg);
+	box-shadow: none;
+}
+
 .spl-check {
 	scale: 0;
 	opacity: 0;
@@ -1702,7 +1709,7 @@ html[data-local-icons="true"] i.fa-solid { font-family: system-ui, sans-serif !i
 html[data-local-icons="true"] i.fa-solid::before { content: "•"; }
 html[data-local-icons="true"] i.fa-check::before { content: "✓"; }
 html[data-local-icons="true"] i.fa-plus::before { content: "+"; }
-html[data-local-icons="true"] i.fa-xmark::before { content: "×"; }
+html[data-local-icons="true"] i.fa-x::before { content: "\2715"; }
 html[data-local-icons="true"] i.fa-rotate-left::before, html[data-local-icons="true"] i.fa-clock-rotate-left::before { content: "↶"; }
 html[data-local-icons="true"] i.fa-gear::before, html[data-local-icons="true"] i.fa-user-gear::before { content: "⚙"; }
 html[data-local-icons="true"] i.fa-arrow-right-from-bracket::before { content: "⇥"; }

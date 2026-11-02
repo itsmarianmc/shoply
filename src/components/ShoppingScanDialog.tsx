@@ -126,7 +126,7 @@ export default function ShoppingScanDialog({ result, onClose }: ShoppingScanDial
               <p className="spl-scan-stat">{result.successfully_parsed_count} von {detected} Items erkannt · {unreadable} unleserlich</p>
             </div>
             <button ref={closeButtonRef} type="button" className="spl-icon-btn spl-icon-btn-sm" onClick={onClose} aria-label="Scan-Vorschau schließen">
-              <i className="fa-solid fa-xmark" aria-hidden="true" />
+              <i className="fa-solid fa-x" aria-hidden="true" />
             </button>
           </div>
 

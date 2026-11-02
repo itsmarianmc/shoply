@@ -1,10 +1,21 @@
 "use client";
-import { useEffect } from "react";
-import { startOffline, useOffline } from "@/lib/offline/client";
+import { useEffect, useState } from "react";
+import { accountCookie, startOffline, useOffline } from "@/lib/offline/client";
+import { cachePhotos } from "@/lib/offline/images";
 
 export default function OfflineLifecycle() {
   const state = useOffline();
+  const [photoError, setPhotoError] = useState("");
   useEffect(() => { startOffline(); }, []);
+  useEffect(() => {
+    const snapshot = state.account?.snapshot;
+    if (!snapshot || !state.connected || state.locked) return;
+    let alive = true;
+    void cachePhotos(snapshot, () => alive && accountCookie() === snapshot.accountKey && navigator.onLine)
+      .then(() => { if (alive) setPhotoError(""); })
+      .catch(() => { if (alive) setPhotoError("Some photos could not be saved offline. Free device storage or reconnect; shopping changes are saved separately."); });
+    return () => { alive = false; };
+  }, [state.account?.snapshot, state.connected, state.locked]);
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     let controlled = !!navigator.serviceWorker.controller;
@@ -37,5 +48,5 @@ export default function OfflineLifecycle() {
     document.fonts.addEventListener("loadingdone", update);
     return () => { active = false; document.removeEventListener("load", loadOptionalFont, true); document.fonts.removeEventListener("loadingdone", update); };
   }, [state.connected]);
-  return null;
+  return photoError && state.account ? <p className="spl-photo-status" role="status">{photoError}</p> : null;
 }

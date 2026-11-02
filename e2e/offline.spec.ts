@@ -90,6 +90,27 @@ test("offline add/edit persists across reload and reaches a second client", asyn
   await other.close();
 });
 
+test("offline checks stay gray and durable until server acknowledgement without network errors", async ({ page, context }) => {
+  await login(page); await add(page, "Gray groceries"); await synced(page);
+  await offline(context, page);
+  await row(page, "Gray groceries").getByRole("button", { name: "Mark as checked", exact: true }).click();
+  const checkbox = row(page, "Gray groceries").locator(".spl-checkbox");
+  await expect(checkbox).toHaveAttribute("data-pending", "true");
+  await expect(checkbox).toHaveAttribute("data-checked", "true");
+  const gray = await page.evaluate(() => { const sample = document.createElement("span"); sample.style.color = "var(--spl-text-faint)"; document.body.append(sample); const color = getComputedStyle(sample).color; sample.remove(); return color; });
+  await expect(checkbox).toHaveCSS("background-color", gray);
+  await add(page, "Locally added groceries");
+  await expect(page.getByText("Could not update the item. Please try again.", { exact: true })).toBeHidden();
+  await expect(page.getByText("Could not save the item. Please try again.", { exact: true })).toBeHidden();
+  await page.reload(); await expect(row(page, "Gray groceries").locator(".spl-checkbox")).toHaveAttribute("data-pending", "true");
+  await expect(row(page, "Locally added groceries")).toBeVisible();
+  await reconnect(context, page); await synced(page);
+  await expect(row(page, "Gray groceries").locator(".spl-checkbox")).toHaveAttribute("data-pending", "false");
+  const db = database(); expect(db.prepare("SELECT name, status FROM items ORDER BY id").all()).toEqual([
+    { name: "Gray groceries", status: "CHECKED" }, { name: "Locally added groceries", status: "ACTIVE" },
+  ]); db.close();
+});
+
 for (const behavior of ["KEEP_IN_LIST", "ARCHIVE"] as const) test(`offline creation/check/edit/undo/complete identity under ${behavior}`, async ({ page, context }) => {
   const db = database(); db.prepare("UPDATE app_settings SET value = ? WHERE key = 'checked_item_behavior'").run(behavior); db.close();
   await login(page); await offline(context, page);
@@ -144,7 +165,7 @@ test("same-field conflicts survive reload, merge independent fields and revalida
   await expect.poll(() => page.evaluate(async () => {
     const key = document.cookie.split("; ").find(c => c.startsWith("shoply_account="))!.split("=")[1]!;
     return new Promise<string | undefined>(resolve => {
-      const request = indexedDB.open("shoply-private-offline", 1);
+      const request = indexedDB.open("shoply-private-offline", 2);
       request.onsuccess = () => { const get = request.result.transaction("accounts").objectStore("accounts").get(key); get.onsuccess = () => resolve(get.result?.snapshot.items.find((i: { name: string }) => i.name === "Conflict groceries")?.note); };
     });
   })).toBe("new shared value");
@@ -207,17 +228,55 @@ test("full local storage reports an unsaved change; offline controls and photos 
   expect(uploaded.ok()).toBe(true);
   await reconnect(context, page); await synced(page); await expect(page.locator(".spl-image-thumb")).toBeVisible();
   await offline(context, page); await page.reload();
-  await expect(page.getByRole("img", { name: "Image for Photo groceries unavailable offline", exact: true })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Image of Photo groceries", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "View image for Photo groceries", exact: true }).click();
+  await expect(page.locator(".spl-image-large")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Close image", exact: true }).locator("i")).toHaveClass("fa-solid fa-x");
+  await page.getByRole("button", { name: "Close image", exact: true }).click();
   await page.getByRole("button", { name: "Open details for Photo groceries" }).click();
   await expect(page.getByText("Image upload, replacement, and deletion require a connection and a synchronized item.")).toBeVisible();
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await expect(page.locator(".spl-scan-btn")).toBeDisabled();
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>(resolve => { const request = indexedDB.open("shoply-private-offline", 2); request.onsuccess = () => resolve(request.result); });
+    await new Promise<void>(resolve => { const tx = db.transaction("images", "readwrite"); tx.objectStore("images").clear(); tx.oncomplete = () => { db.close(); resolve(); }; });
+  });
+  await page.reload();
+  await expect(page.getByRole("img", { name: "Image for Photo groceries unavailable offline", exact: true })).toBeVisible();
   await page.evaluate(() => {
     IDBObjectStore.prototype.put = function () { throw new DOMException("Simulated full storage", "QuotaExceededError"); };
   });
   await page.getByPlaceholder("What do you need?").fill("Must not appear saved"); await page.getByRole("button", { name: "Add item", exact: true }).click();
   await expect(page.locator(".spl-sync > [role=status]")).toHaveText("Local save failed — change not saved");
   await expect(page.getByRole("button", { name: "Open details for Must not appear saved" })).toBeHidden();
+});
+
+test("private photo cache survives browser restart and is removed on logout", async () => {
+  const settings = database(); settings.prepare("UPDATE app_settings SET value = 'ARCHIVE' WHERE key = 'checked_item_behavior'").run(); settings.close();
+  const profile = fs.mkdtempSync(path.join(process.cwd(), ".npm-cache", "offline-photo-profile-"));
+  let context = await chromium.launchPersistentContext(profile, { headless: true });
+  let page = await context.newPage(); await login(page); await add(page, "Restart photo"); await synced(page);
+  const db = database(); const item = db.prepare("SELECT id FROM items WHERE name = 'Restart photo'").get() as { id: number }; db.close();
+  const image = await sharp({ create: { width: 20, height: 20, channels: 3, background: "blue" } }).png().toBuffer();
+  expect((await context.request.post(`${origin}/api/item-images`, { multipart: { itemId: String(item.id), image: { name: "photo.png", mimeType: "image/png", buffer: image } } })).ok()).toBe(true);
+  await reconnect(context, page); await synced(page); await expect(page.locator(".spl-image-thumb img")).toBeVisible();
+  await row(page, "Restart photo").getByRole("button", { name: "Mark as checked", exact: true }).click(); await synced(page);
+  await page.getByRole("link", { name: "Archive", exact: true }).click(); await expect(page.locator(".spl-image-thumb img")).toBeVisible();
+  await context.close();
+  context = await chromium.launchPersistentContext(profile, { headless: true, offline: true });
+  await context.route("**/api/offline", offlineRoute); page = await context.newPage(); await page.goto(`${origin}/archive`);
+  await expect(page.getByRole("img", { name: "Image of Restart photo", exact: true })).toBeVisible();
+  await reconnect(context, page); await synced(page);
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page.getByLabel("Who are you?")).toBeVisible();
+  expect(await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => { const request = indexedDB.open("shoply-private-offline", 2); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+    return new Promise<number>(resolve => { const tx = db.transaction("images"); const count = tx.objectStore("images").count(); count.onsuccess = () => resolve(count.result); tx.oncomplete = () => db.close(); });
+  })).toBe(0);
+  await page.getByLabel("Who are you?").selectOption({ label: "Offline Member" }); await page.getByLabel("Password", { exact: true }).fill("offline-test-password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click(); await synced(page);
+  await expect(page.locator(".spl-user-name")).toHaveText("Offline Member");
+  await context.close();
 });
 
 test("no prior authenticated setup shows a useful fallback; caches contain only generic shell/assets", async ({ page, context }) => {
@@ -344,7 +403,7 @@ test("signing into another account after expiry isolates a retained queue, then 
   await reconnect(context, page); await expect(page.getByText("Sign in again to open your private shopping data. Pending changes are retained.")).toBeVisible();
   await login(page, "Offline Member"); await expect(row(page, "Original account pending")).toBeHidden();
   const queues = await page.evaluate(async () => {
-    const opened = indexedDB.open("shoply-private-offline", 1);
+    const opened = indexedDB.open("shoply-private-offline", 2);
     return new Promise<{ name: string; pending: number; locked: boolean }[]>(resolve => {
       opened.onsuccess = () => { const get = opened.result.transaction("accounts").objectStore("accounts").getAll(); get.onsuccess = () => resolve(get.result.filter(a => a?.schema === 1).map(a => ({ name: a.snapshot.user.name, pending: a.queue.length, locked: a.locked }))); };
     });
